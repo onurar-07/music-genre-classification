@@ -12,15 +12,15 @@ Compares handcrafted features (MFCC, chroma, rhythm) with CNN-based approaches o
 
 ```
 term_project/
-├── extract_features.py     # Step 1 — extract handcrafted features from audio
-├── train_evaluate.py       # Step 2 — Random Forest vs MLP baseline
-├── cnn_classifier.py       # Step 3 — CNN on mel spectrograms (+ SpecAugment)
-├── cnn_regularized.py      # Step 4 — heavily regularised CNN (reference)
-├── cnn_balanced.py         # Step 5 — balanced regularisation CNN (best model)
+├── extract_features.py  # Step 1 — extract handcrafted features from audio
+├── train_evaluate.py    # Step 2 — Random Forest vs MLP baseline
+├── cnn_classifier.py    # Step 3 — CNN on mel spectrograms (+ SpecAugment)
+├── cnn_regularized.py   # Step 4 — heavily regularised CNN (reference)
+├── cnn_balanced.py      # Step 5 — balanced regularisation CNN for comparison
 ├── requirements.txt
-├── data/                   # ← put dataset here (see below)
-├── features/               # auto-created when you run the scripts
-└── results/                # auto-created — all plots and CSVs saved here
+├── data/                # ← put dataset here (see below)
+├── features/            # auto-created when you run the scripts
+└── results/             # auto-created — all plots and CSVs saved here
 ```
 
 ---
@@ -103,7 +103,7 @@ python3 cnn_regularized.py
 Aggressive regularisation: strong dropout, large SpecAugment masks, Mixup, label smoothing.  
 Useful for comparison — shows what happens when regularisation is too strong.
 
-### Step 5 — Balanced CNN (best model)
+### Step 5 — Balanced CNN regularisation experiment
 ```bash
 python3 cnn_balanced.py
 ```
