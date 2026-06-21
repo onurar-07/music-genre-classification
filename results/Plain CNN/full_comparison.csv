@@ -1,0 +1,3 @@
+label,acc,f1
+CNN – Mel (no aug),0.56625,0.5532533848115109
+CNN – Mel + SpecAugment,0.593125,0.5920270941359287

@@ -1,8 +1,9 @@
 """
-Regularised CNN experiments for FMA-small genre classification.
+ResNet-style CNN for FMA-small genre classification.
 
-Uses the shared train/validation/test split. Validation F1-macro drives early
-stopping and best-epoch selection; final metrics are reported on test.
+Uses cached mel spectrograms and the shared train/validation/test split.
+Validation F1-macro selects the best epoch; final metrics are reported on test.
+This version keeps the full GPU-oriented residual model capacity.
 """
 
 import random
@@ -35,19 +36,18 @@ np.random.seed(42)
 random.seed(42)
 
 MEL_CACHE = ROOT / "features" / "mel_specs.npz"
-OUT_DIR = experiment_dir("Regularised CNN")
+OUT_DIR = experiment_dir("ResNet CNN")
 
 BATCH_SIZE = 32
 EPOCHS = 60
-LR = 5e-4
-WEIGHT_DECAY = 1e-3
+LR = 1e-3
+WEIGHT_DECAY = 1e-4
 PATIENCE = 12
 
-SPEC_T = 40
-SPEC_F = 25
+SPEC_T = 25
+SPEC_F = 15
 N_TIME_MASKS = 2
 N_FREQ_MASKS = 2
-MIXUP_ALPHA = 0.3
 
 
 def get_device():
@@ -85,16 +85,6 @@ def spec_augment(mel):
     return mel
 
 
-def mixup_batch(X, y, alpha=MIXUP_ALPHA):
-    lam = float(np.random.beta(alpha, alpha))
-    idx = torch.randperm(X.size(0), device=X.device)
-    return lam * X + (1 - lam) * X[idx], y, y[idx], lam
-
-
-def mixup_loss(criterion, pred, y_a, y_b, lam):
-    return lam * criterion(pred, y_a) + (1 - lam) * criterion(pred, y_b)
-
-
 class MelDataset(Dataset):
     def __init__(self, mels, labels, augment=False):
         self.mels = torch.tensor(mels[:, None, :, :], dtype=torch.float32)
@@ -111,62 +101,76 @@ class MelDataset(Dataset):
         return mel, self.labels[idx]
 
 
-class RegularisedCNN(nn.Module):
-    def __init__(self, n_classes=8):
+class ResidualBlock(nn.Module):
+    def __init__(self, in_ch, out_ch, stride=1, dropout=0.0):
         super().__init__()
-        self.block1 = self._conv_block(1, 32)
-        self.drop1 = nn.Dropout2d(0.1)
-        self.block2 = self._conv_block(32, 64)
-        self.drop2 = nn.Dropout2d(0.2)
-        self.block3 = self._conv_block(64, 128)
-        self.drop3 = nn.Dropout2d(0.3)
-        self.pool = nn.AdaptiveAvgPool2d(1)
-        self.classifier = nn.Sequential(
-            nn.Dropout(0.6),
-            nn.Linear(128, 64),
-            nn.ReLU(inplace=True),
-            nn.Dropout(0.4),
-            nn.Linear(64, n_classes),
-        )
+        self.conv1 = nn.Conv2d(in_ch, out_ch, 3, stride=stride, padding=1, bias=False)
+        self.bn1 = nn.BatchNorm2d(out_ch)
+        self.relu = nn.ReLU(inplace=True)
+        self.conv2 = nn.Conv2d(out_ch, out_ch, 3, padding=1, bias=False)
+        self.bn2 = nn.BatchNorm2d(out_ch)
+        self.drop = nn.Dropout2d(dropout) if dropout > 0 else nn.Identity()
 
-    @staticmethod
-    def _conv_block(in_ch, out_ch):
-        return nn.Sequential(
-            nn.Conv2d(in_ch, out_ch, 3, padding=1, bias=False),
-            nn.BatchNorm2d(out_ch),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(out_ch, out_ch, 3, padding=1, bias=False),
-            nn.BatchNorm2d(out_ch),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(2, 2),
-        )
+        if stride != 1 or in_ch != out_ch:
+            self.skip = nn.Sequential(
+                nn.Conv2d(in_ch, out_ch, 1, stride=stride, bias=False),
+                nn.BatchNorm2d(out_ch),
+            )
+        else:
+            self.skip = nn.Identity()
 
     def forward(self, x):
-        x = self.drop1(self.block1(x))
-        x = self.drop2(self.block2(x))
-        x = self.drop3(self.block3(x))
+        identity = self.skip(x)
+        out = self.relu(self.bn1(self.conv1(x)))
+        out = self.drop(out)
+        out = self.bn2(self.conv2(out))
+        return self.relu(out + identity)
+
+
+class ResNetGenreCNN(nn.Module):
+    def __init__(self, n_classes=8):
+        super().__init__()
+        self.stem = nn.Sequential(
+            nn.Conv2d(1, 32, 3, padding=1, bias=False),
+            nn.BatchNorm2d(32),
+            nn.ReLU(inplace=True),
+        )
+        self.stage1 = self._make_stage(32, 32, blocks=2, stride=1, dropout=0.05)
+        self.stage2 = self._make_stage(32, 64, blocks=2, stride=2, dropout=0.05)
+        self.stage3 = self._make_stage(64, 128, blocks=2, stride=2, dropout=0.10)
+        self.stage4 = self._make_stage(128, 256, blocks=1, stride=2, dropout=0.15)
+        self.pool = nn.AdaptiveAvgPool2d(1)
+        self.classifier = nn.Sequential(nn.Dropout(0.4), nn.Linear(256, n_classes))
+
+    @staticmethod
+    def _make_stage(in_ch, out_ch, blocks, stride, dropout):
+        layers = [ResidualBlock(in_ch, out_ch, stride=stride, dropout=dropout)]
+        for _ in range(1, blocks):
+            layers.append(ResidualBlock(out_ch, out_ch, dropout=dropout))
+        return nn.Sequential(*layers)
+
+    def forward(self, x):
+        x = self.stem(x)
+        x = self.stage1(x)
+        x = self.stage2(x)
+        x = self.stage3(x)
+        x = self.stage4(x)
         x = self.pool(x).flatten(1)
         return self.classifier(x)
 
 
-def train_epoch(model, loader, optimizer, criterion, use_mixup):
+def train_epoch(model, loader, optimizer, criterion):
     model.train()
     total_loss, correct, n = 0.0, 0, 0
     for X, y in loader:
         X, y = X.to(DEVICE), y.to(DEVICE)
         optimizer.zero_grad()
-        if use_mixup:
-            X, y_a, y_b, lam = mixup_batch(X, y)
-            out = model(X)
-            loss = mixup_loss(criterion, out, y_a, y_b, lam)
-            correct += (out.argmax(1) == y_a).sum().item()
-        else:
-            out = model(X)
-            loss = criterion(out, y)
-            correct += (out.argmax(1) == y).sum().item()
+        out = model(X)
+        loss = criterion(out, y)
         loss.backward()
         optimizer.step()
         total_loss += loss.item() * len(y)
+        correct += (out.argmax(1) == y).sum().item()
         n += len(y)
     return total_loss / n, correct / n
 
@@ -193,11 +197,11 @@ def clone_state_dict(model):
     return {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
 
 
-def run(train_ds, val_ds, test_ds, label, le, use_mixup):
-    model = RegularisedCNN(n_classes=len(le.classes_)).to(DEVICE)
-    optimizer = optim.Adam(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
+def run_resnet(train_ds, val_ds, test_ds, le):
+    model = ResNetGenreCNN(n_classes=len(le.classes_)).to(DEVICE)
+    optimizer = optim.AdamW(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=EPOCHS)
-    criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
+    criterion = nn.CrossEntropyLoss(label_smoothing=0.05)
 
     train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True, num_workers=0)
     val_loader = DataLoader(val_ds, batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
@@ -209,7 +213,7 @@ def run(train_ds, val_ds, test_ds, label, le, use_mixup):
     history = {"train_loss": [], "train_acc": [], "val_loss": [], "val_acc": [], "val_f1": []}
 
     for epoch in range(1, EPOCHS + 1):
-        tr_loss, tr_acc = train_epoch(model, train_loader, optimizer, criterion, use_mixup)
+        tr_loss, tr_acc = train_epoch(model, train_loader, optimizer, criterion)
         val_loss, val_acc, val_f1, val_true, val_pred = evaluate(model, val_loader, criterion)
         scheduler.step()
 
@@ -240,9 +244,9 @@ def run(train_ds, val_ds, test_ds, label, le, use_mixup):
 
     model.load_state_dict(best_state)
     _, test_acc, test_f1, test_true, test_pred = evaluate(model, test_loader, criterion)
-    print(f"\n{label}: best_epoch={best_epoch}  val_f1={best_val_f1:.4f}  test_acc={test_acc:.4f}  test_f1={test_f1:.4f}")
+    print(f"\nResNet CNN + SpecAugment: best_epoch={best_epoch}  val_f1={best_val_f1:.4f}  test_acc={test_acc:.4f}  test_f1={test_f1:.4f}")
     return {
-        "label": label,
+        "label": "ResNet CNN + SpecAugment",
         "val_true": best_val_true,
         "val_pred": best_val_pred,
         "test_true": test_true,
@@ -255,52 +259,34 @@ def run(train_ds, val_ds, test_ds, label, le, use_mixup):
 
 def main():
     mels, labels = load_mel_cache()
-    print(f"Loaded mel specs: {mels.shape}")
+    print(f"Loaded mel specs: {mels.shape}", flush=True)
     le = LabelEncoder()
     y = le.fit_transform(labels)
     idx_train, idx_val, idx_test = split_indices(y)
-    print(f"Split sizes: train={len(idx_train)}  val={len(idx_val)}  test={len(idx_test)}")
-
-    val_ds = MelDataset(mels[idx_val], y[idx_val], augment=False)
-    test_ds = MelDataset(mels[idx_test], y[idx_test], augment=False)
+    print(f"Split sizes: train={len(idx_train)}  val={len(idx_val)}  test={len(idx_test)}", flush=True)
 
     print("\n" + "=" * 60)
-    print("  Run 1 - Regularised CNN (no Mixup)")
+    print("  ResNet-style CNN (SpecAugment, val-selected epoch)")
     print("=" * 60)
-    res_reg = run(
-        MelDataset(mels[idx_train], y[idx_train], augment=True),
-        val_ds,
-        test_ds,
-        "Reg. CNN (no Mixup)",
-        le,
-        use_mixup=False,
-    )
 
-    print("\n" + "=" * 60)
-    print("  Run 2 - Regularised CNN (+ Mixup)")
-    print("=" * 60)
-    res_mix = run(
+    result = run_resnet(
         MelDataset(mels[idx_train], y[idx_train], augment=True),
-        val_ds,
-        test_ds,
-        "Reg. CNN + Mixup",
+        MelDataset(mels[idx_val], y[idx_val], augment=False),
+        MelDataset(mels[idx_test], y[idx_test], augment=False),
         le,
-        use_mixup=True,
     )
-
-    results = [res_reg, res_mix]
+    results = [result]
     metrics_df = save_metrics(results, OUT_DIR)
     save_history(results, OUT_DIR)
     plot_training_history(results, OUT_DIR)
-    plot_metrics(metrics_df, OUT_DIR, "Regularised CNN models")
-    best = max(results, key=lambda r: r["best_val_f1"])
-    plot_confusion_matrix(best["test_true"], best["test_pred"], le.classes_, OUT_DIR, f"Confusion matrix - {best['label']}")
-    write_classification_report(best, le.classes_, OUT_DIR)
+    plot_metrics(metrics_df, OUT_DIR, "ResNet CNN model")
+    plot_confusion_matrix(result["test_true"], result["test_pred"], le.classes_, OUT_DIR, f"Confusion matrix - {result['label']}")
+    write_classification_report(result, le.classes_, OUT_DIR)
     update_global_comparison()
 
     print("\n=== Metrics ===")
     print(metrics_df.to_string(index=False))
-    print("\nSaved to results/Regularised CNN/:")
+    print("\nSaved to results/ResNet CNN/:")
     print("  metrics.csv")
     print("  metrics.png")
     print("  training_history.csv")

@@ -14,9 +14,12 @@ Compares handcrafted features (MFCC, chroma, rhythm) with CNN-based approaches o
 term_project/
 ├── extract_features.py  # Step 1 — extract handcrafted features from audio
 ├── train_evaluate.py    # Step 2 — Random Forest vs MLP baseline
-├── cnn_classifier.py    # Step 3 — CNN on mel spectrograms (+ SpecAugment)
-├── cnn_regularized.py   # Step 4 — heavily regularised CNN (reference)
-├── cnn_balanced.py      # Step 5 — balanced regularisation CNN for comparison
+├── extract_mel_specs.py # Step 3 — extract cached mel spectrograms
+├── cnn_plain.py         # Step 4 — plain CNN on mel spectrograms (+ SpecAugment)
+├── cnn_regularized.py   # Step 5 — heavily regularised CNN (reference)
+├── cnn_balanced.py      # Step 6 — balanced regularisation CNN for comparison
+├── cnn_resnet.py        # Step 7 — full ResNet-style CNN experiment
+├── experiment_utils.py  # Shared split, metrics, plots, and reports
 ├── requirements.txt
 ├── data/                # ← put dataset here (see below)
 ├── features/            # auto-created when you run the scripts
@@ -75,6 +78,10 @@ data/
 
 Run the scripts in order. Each one builds on the previous.
 
+All model scripts use the same stratified train/validation/test split:
+64% train, 16% validation, 20% test. Validation F1-macro selects the best
+model/epoch; final metrics are reported on the held-out test split.
+
 ### Step 1 — Extract handcrafted features (~30 min, runs once)
 ```bash
 python3 extract_features.py
@@ -87,45 +94,68 @@ python3 train_evaluate.py
 ```
 Compares feature groups (timbre / harmony / rhythm / combined) with Random Forest,  
 then RF vs MLP on the best feature set.  
-Saves plots and a results table to `results/`.
+Saves unified outputs to `results/Random Forest vs MLP/`.
 
-### Step 3 — CNN on mel spectrograms (~30 min first run, then fast)
+### Step 3 — Extract mel spectrograms (~30 min, runs once)
 ```bash
-python3 cnn_classifier.py
+python3 extract_mel_specs.py
 ```
-Extracts mel spectrograms and caches them to `features/mel_specs.npz` (first run only).  
-Trains CNN without augmentation, then CNN with SpecAugment.
+Extracts mel spectrograms and caches them to `features/mel_specs.npz`.
 
-### Step 4 — Heavily regularised CNN
+### Step 4 — Plain CNN on mel spectrograms
+```bash
+python3 cnn_plain.py
+```
+Trains CNN without augmentation, then CNN with SpecAugment.
+Saves unified outputs to `results/Plain CNN/`.
+
+### Step 5 — Heavily regularised CNN
 ```bash
 python3 cnn_regularized.py
 ```
 Aggressive regularisation: strong dropout, large SpecAugment masks, Mixup, label smoothing.  
 Useful for comparison — shows what happens when regularisation is too strong.
+Saves unified outputs to `results/Regularised CNN/`.
 
-### Step 5 — Balanced CNN regularisation experiment
+### Step 6 — Balanced CNN regularisation experiment
 ```bash
 python3 cnn_balanced.py
 ```
 Tuned regularisation that avoids both overfitting and under-learning.  
-Produces `results/all_models_final.png` — all models compared side by side.
+Saves unified outputs to `results/Balanced CNN/`.
+
+### Step 7 — ResNet-style CNN experiment
+```bash
+python3 cnn_resnet.py
+```
+Full residual CNN using the cached mel spectrograms.
+Saves unified outputs to `results/ResNet CNN/`.
 
 ---
 
 ## Results
 
-All plots and CSVs are saved to `results/` after each script:
+Each experiment writes the same core output files inside its own subdirectory:
 
 | File | Description |
 |---|---|
-| `feature_comparison.png` | RF accuracy across feature groups |
-| `confusion_matrix_best.png` | Confusion matrix for best RF/MLP model |
-| `cnn_training_history.png` | CNN training curves |
-| `full_comparison.png` | RF/MLP vs CNN vs CNN+SpecAugment |
-| `regularised_training.png` | Overfitting analysis |
-| `balanced_training.png` | Balanced CNN training curves |
-| `all_models_final.png` | All models compared |
-| `all_models_final.csv` | Numbers for all models |
+| `metrics.csv` | Validation and test accuracy/F1 for each model in that script |
+| `metrics.png` | Bar chart of test accuracy and F1-macro |
+| `classification_report.txt` | Test classification report for the validation-selected best model |
+| `confusion_matrix.png` | Test confusion matrix for the validation-selected best model |
+| `training_history.csv` | Per-epoch training/validation history for neural models |
+| `training_history.png` | Training curves for neural models |
+
+The cross-experiment leaderboard is updated automatically after each model
+script runs:
+
+| File | Description |
+|---|---|
+| `results/model_comparison.csv` | Unified test metrics across all experiments that have been rerun |
+| `results/model_comparison.png` | Unified comparison plot |
+
+The handcrafted baseline also writes `feature_importance.png` for the best RF
+feature set.
 
 ---
 

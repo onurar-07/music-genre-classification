@@ -1,0 +1,18 @@
+MLP - Combined
+Test accuracy: 0.5288
+Test F1-macro: 0.5220
+
+               precision    recall  f1-score   support
+
+   Electronic       0.57      0.56      0.56       200
+ Experimental       0.59      0.33      0.42       200
+         Folk       0.55      0.69      0.61       200
+      Hip-Hop       0.63      0.68      0.65       200
+ Instrumental       0.48      0.59      0.53       200
+International       0.64      0.54      0.58       200
+          Pop       0.29      0.26      0.27       200
+         Rock       0.51      0.59      0.55       200
+
+     accuracy                           0.53      1600
+    macro avg       0.53      0.53      0.52      1600
+ weighted avg       0.53      0.53      0.52      1600

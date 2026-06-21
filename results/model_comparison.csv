@@ -1,0 +1,13 @@
+experiment,model,split,accuracy,f1_macro,best_epoch,best_val_f1
+Balanced CNN,Balanced CNN,test,0.56,0.5398717351821835,59.0,0.5423430676672587
+Balanced CNN,Balanced CNN + Mixup,test,0.56625,0.5394636735235874,56.0,0.5239490530681219
+Plain CNN,CNN - Mel (no aug),test,0.475,0.4630854605545315,5.0,0.4760748016366948
+Plain CNN,CNN - Mel + SpecAugment,test,0.55625,0.5622079328983802,55.0,0.5896659208566846
+Random Forest vs MLP,RF - Timbre,test,0.5075,0.4993128670350898,,
+Random Forest vs MLP,RF - Harmony,test,0.39,0.379877220790521,,
+Random Forest vs MLP,RF - Rhythm,test,0.365,0.3584670795546291,,
+Random Forest vs MLP,RF - Combined,test,0.52125,0.514454599869707,,
+Random Forest vs MLP,MLP - Combined,test,0.52875,0.521975466696204,,
+Regularised CNN,Reg. CNN (no Mixup),test,0.493125,0.450916538715353,36.0,0.4732094469582831
+Regularised CNN,Reg. CNN + Mixup,test,0.5025,0.458402372888595,58.0,0.4598206041678389
+ResNet CNN,ResNet CNN + SpecAugment,test,0.578125,0.5720560455943875,30.0,0.5799489865884033
