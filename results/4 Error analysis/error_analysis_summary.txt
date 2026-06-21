@@ -1,0 +1,43 @@
+Error analysis
+Source predictions: results/3 Hybrid Modal/predictions.csv
+Overall accuracy: 0.5906
+
+Weakest classes by recall:
+   true_label  support  correct  errors  recall
+          Pop      200       36     164   0.180
+ Experimental      200       79     121   0.395
+International      200      121      79   0.605
+ Instrumental      200      130      70   0.650
+   Electronic      200      135      65   0.675
+
+Most common confusion pairs:
+   true_label    pred_label  count
+          Pop          Rock     51
+ Experimental  Instrumental     30
+      Hip-Hop    Electronic     25
+ Experimental    Electronic     25
+          Pop    Electronic     23
+          Pop          Folk     23
+          Pop International     22
+ Experimental          Rock     21
+International          Folk     21
+         Rock           Pop     20
+
+Highest-confidence errors:
+  true_label    pred_label  confidence  confidence_margin
+        Rock    Electronic    0.962563           0.950443
+  Electronic International    0.877116           0.832502
+         Pop       Hip-Hop    0.846217           0.784891
+         Pop    Electronic    0.811914           0.733772
+Instrumental          Rock    0.810224           0.713559
+         Pop          Rock    0.794379           0.683765
+     Hip-Hop  Instrumental    0.788729           0.729814
+         Pop International    0.780593           0.700758
+         Pop          Folk    0.774757           0.695341
+  Electronic       Hip-Hop    0.767700           0.679735
+
+Suggested next improvements:
+- Segment-based training to expose more local temporal detail.
+- Multi-crop inference to average predictions over several song excerpts.
+- Inspect Pop and Experimental confusions first; they are usually the weakest labels.
+- Inspect whether the hybrid branch improves or worsens the weakest CNN classes.

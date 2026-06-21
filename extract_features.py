@@ -21,6 +21,8 @@ import librosa
 from pathlib import Path
 from tqdm import tqdm
 
+from reporting_utils import print_section
+
 warnings.filterwarnings("ignore")
 
 # ── Paths (always relative to this script's location) ─────────────────────────
@@ -124,8 +126,9 @@ def extract_all(y: np.ndarray, sr: int) -> dict:
 # ── Main extraction loop ──────────────────────────────────────────────────────
 def main():
     tracks = load_tracks()
-    print(f"FMA-small tracks with genre label: {len(tracks)}")
-    print("Genre distribution:")
+    print_section("Extract handcrafted features")
+    print(f"Tracks with genre label: {len(tracks)}")
+    print_section("Genre distribution")
     print(tracks.value_counts().to_string(), "\n")
 
     buffers = {"timbre": [], "harmony": [], "rhythm": [], "combined": []}
@@ -149,7 +152,8 @@ def main():
             skipped += 1
 
     n = len(labels)
-    print(f"\nProcessed: {n} / {len(tracks)} tracks  (skipped: {skipped})")
+    print_section("Extraction summary")
+    print(f"Processed: {n} / {len(tracks)} tracks  skipped={skipped}")
 
     np.savez_compressed(
         FEATURES_DIR / "features.npz",
@@ -160,11 +164,11 @@ def main():
         labels    = np.array(labels),
         track_ids = np.array(track_ids),
     )
-    print(f"Saved → features/features.npz")
-    print(f"  timbre   : {np.vstack(buffers['timbre']).shape}")
-    print(f"  harmony  : {np.vstack(buffers['harmony']).shape}")
-    print(f"  rhythm   : {np.vstack(buffers['rhythm']).shape}")
-    print(f"  combined : {np.vstack(buffers['combined']).shape}")
+    print("Saved: features/features.npz")
+    print(f"Shapes: timbre={np.vstack(buffers['timbre']).shape}  "
+          f"harmony={np.vstack(buffers['harmony']).shape}  "
+          f"rhythm={np.vstack(buffers['rhythm']).shape}  "
+          f"combined={np.vstack(buffers['combined']).shape}")
 
 
 if __name__ == "__main__":

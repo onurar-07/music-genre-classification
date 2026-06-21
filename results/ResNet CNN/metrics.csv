@@ -1,3 +1,0 @@
-model,split,accuracy,f1_macro,best_epoch,best_val_f1
-ResNet CNN + SpecAugment,val,0.58515625,0.5799489865884033,30,0.5799489865884033
-ResNet CNN + SpecAugment,test,0.578125,0.5720560455943875,30,0.5799489865884033

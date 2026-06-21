@@ -1,0 +1,9 @@
+model,split,accuracy,f1_macro,best_epoch,best_val_f1,param_count,trainable_param_count,training_seconds,epochs_run,probability_source_dir,probability_model
+Moderately Regularised CNN - no augmentation (from 2.2 Regularisation ablation),val,0.571875,0.5624396890293926,51,0.5624396890293926,295656,295656,265.9338497829999,60,2.2 Regularisation ablation,Moderately Regularised CNN
+Moderately Regularised CNN - no augmentation (from 2.2 Regularisation ablation),test,0.574375,0.5604797408275684,51,0.5624396890293926,295656,295656,265.9338497829999,60,2.2 Regularisation ablation,Moderately Regularised CNN
+Moderately Regularised CNN - SpecAugment,val,0.54765625,0.5328191608390622,37,0.5328191608390622,295656,295656,242.6369828029999,49,2.4 Augmentation ablation,Moderately Regularised CNN - SpecAugment
+Moderately Regularised CNN - SpecAugment,test,0.54375,0.5260064781243851,37,0.5328191608390622,295656,295656,242.6369828029999,49,2.4 Augmentation ablation,Moderately Regularised CNN - SpecAugment
+Moderately Regularised CNN - Mixup,val,0.56484375,0.5496615729205724,52,0.5496615729205724,295656,295656,268.95079349900016,60,2.4 Augmentation ablation,Moderately Regularised CNN - Mixup
+Moderately Regularised CNN - Mixup,test,0.581875,0.5630101921475277,52,0.5496615729205724,295656,295656,268.95079349900016,60,2.4 Augmentation ablation,Moderately Regularised CNN - Mixup
+Moderately Regularised CNN - SpecAugment + Mixup,val,0.55703125,0.5366884464702194,52,0.5366884464702194,295656,295656,270.46262927299995,60,2.4 Augmentation ablation,Moderately Regularised CNN - SpecAugment + Mixup
+Moderately Regularised CNN - SpecAugment + Mixup,test,0.5625,0.5345521964249531,52,0.5366884464702194,295656,295656,270.46262927299995,60,2.4 Augmentation ablation,Moderately Regularised CNN - SpecAugment + Mixup

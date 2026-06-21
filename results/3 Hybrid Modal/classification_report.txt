@@ -1,0 +1,19 @@
+Hybrid late fusion (Moderately Regularised CNN - no augmentation (from 2.2 Regularisation ablation) + MLP - Combined)
+Test accuracy: 0.5906
+Test F1-macro: 0.5763
+Best validation F1-macro: 0.5808
+
+               precision    recall  f1-score   support
+
+   Electronic       0.55      0.68      0.60       200
+ Experimental       0.60      0.40      0.48       200
+         Folk       0.64      0.79      0.71       200
+      Hip-Hop       0.70      0.73      0.72       200
+ Instrumental       0.59      0.65      0.62       200
+International       0.68      0.60      0.64       200
+          Pop       0.31      0.18      0.23       200
+         Rock       0.56      0.69      0.62       200
+
+     accuracy                           0.59      1600
+    macro avg       0.58      0.59      0.58      1600
+ weighted avg       0.58      0.59      0.58      1600

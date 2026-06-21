@@ -14,6 +14,8 @@ from scipy.ndimage import zoom
 from tqdm import tqdm
 from pathlib import Path
 
+from reporting_utils import print_section
+
 warnings.filterwarnings("ignore")
 
 ROOT = Path(__file__).parent
@@ -54,7 +56,8 @@ def build_mel_cache():
     track_ids = data["track_ids"]
     labels = data["labels"]
 
-    print(f"Extracting mel spectrograms for {len(track_ids)} tracks...")
+    print_section("Extract mel spectrograms")
+    print(f"Tracks: {len(track_ids)}")
     mels, valid_idx = [], []
     for i, tid in enumerate(tqdm(track_ids, desc="Mel extraction")):
         path = audio_path(int(tid))
@@ -77,8 +80,9 @@ def build_mel_cache():
         labels=labels,
         track_ids=track_ids,
     )
-    print(f"Saved {len(mels)} mel spectrograms to {MEL_CACHE.relative_to(ROOT)}")
-    print(f"Shape: {mels.shape}  dtype: float16 on disk")
+    print_section("Extraction summary")
+    print(f"Saved: {MEL_CACHE.relative_to(ROOT)}")
+    print(f"Mel specs: {len(mels)}  shape={mels.shape}  dtype=float16 on disk")
 
 
 def main():

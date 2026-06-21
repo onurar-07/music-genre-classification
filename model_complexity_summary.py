@@ -1,0 +1,92 @@
+"""Summarise model parameter counts and recorded training times."""
+
+import pandas as pd
+
+from cnn_training_utils import PlainCNN, RegularisedCNN, ResNetGenreCNN, count_parameters
+from reporting_utils import RESULTS_ROOT, print_saved_outputs, print_section
+
+
+def architecture_rows():
+    models = [
+        ("Plain CNN", PlainCNN(n_classes=8)),
+        (
+            "Heavily Regularised CNN",
+            RegularisedCNN(
+                n_classes=8,
+                block_dropouts=(0.1, 0.2, 0.3),
+                fc_dropouts=(0.6, 0.4),
+            ),
+        ),
+        (
+            "Moderately Regularised CNN",
+            RegularisedCNN(
+                n_classes=8,
+                block_dropouts=(0.05, 0.10, 0.15),
+                fc_dropouts=(0.5, 0.3),
+            ),
+        ),
+        ("ResNet CNN", ResNetGenreCNN(n_classes=8)),
+    ]
+    rows = []
+    for name, model in models:
+        total, trainable = count_parameters(model)
+        rows.append(
+            {
+                "model": name,
+                "param_count": total,
+                "trainable_param_count": trainable,
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def recorded_training_rows():
+    rows = []
+    for path in sorted(RESULTS_ROOT.glob("*/metrics.csv")):
+        df = pd.read_csv(path)
+        if "training_seconds" not in df.columns:
+            continue
+        test_df = df[df["split"] == "test"].copy()
+        test_df["experiment"] = path.parent.name
+        rows.append(test_df)
+    if not rows:
+        return pd.DataFrame()
+    cols = [
+        "experiment",
+        "model",
+        "accuracy",
+        "f1_macro",
+        "param_count",
+        "trainable_param_count",
+        "training_seconds",
+        "epochs_run",
+        "best_epoch",
+    ]
+    df = pd.concat(rows, ignore_index=True)
+    return df[[col for col in cols if col in df.columns]]
+
+
+def main():
+    arch_df = architecture_rows()
+    arch_path = RESULTS_ROOT / "model_parameter_counts.csv"
+    arch_df.to_csv(arch_path, index=False)
+
+    print_section("Architecture parameter counts")
+    print(arch_df.to_string(index=False))
+
+    training_df = recorded_training_rows()
+    if training_df.empty:
+        print_section("Recorded training times")
+        print("No metrics.csv files with training time found yet.")
+        print_saved_outputs(RESULTS_ROOT, ["model_parameter_counts.csv"])
+        return
+
+    train_path = RESULTS_ROOT / "model_training_times.csv"
+    training_df.to_csv(train_path, index=False)
+    print_section("Recorded training times")
+    print(training_df.to_string(index=False))
+    print_saved_outputs(RESULTS_ROOT, ["model_parameter_counts.csv", "model_training_times.csv"])
+
+
+if __name__ == "__main__":
+    main()
