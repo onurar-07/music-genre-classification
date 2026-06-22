@@ -104,7 +104,7 @@ def evaluate_model(model, X, y, idx_train, idx_val, idx_test, label):
 
     print(
         f"{label}: val_f1={val_row['f1_macro']:.4f}  "
-        f"test_f1={test_row['f1_macro']:.4f}  time={training_seconds:.1f}s"
+        f"test_f1={test_row['f1_macro']:.4f}  runtime={training_seconds:.1f}s"
     )
 
     return {

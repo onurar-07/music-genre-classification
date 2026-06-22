@@ -24,6 +24,8 @@ from cnn_training_utils import (
     finalize_experiment,
     load_mel_cache,
     loader_kwargs,
+    current_lr,
+    make_scheduler,
     make_optimizer,
     make_split,
     mixup_batch,
@@ -85,7 +87,7 @@ def resnet_factory(n_classes):
 MODEL_CONFIGS = {
     "Plain CNN": {
         "factory": plain_factory,
-        "train_cfg": TrainConfig(epochs=60, lr=1e-3, weight_decay=1e-4, patience=12),
+        "train_cfg": TrainConfig(epochs=300, lr=1e-3, weight_decay=1e-4, patience=48),
         "augment_cfg": AugmentConfig(specaugment=False, mixup=False),
         "spec_t": 25,
         "spec_f": 15,
@@ -93,10 +95,10 @@ MODEL_CONFIGS = {
     "Heavily Regularised CNN": {
         "factory": heavy_factory,
         "train_cfg": TrainConfig(
-            epochs=60,
-            lr=5e-4,
+            epochs=300,
+            lr=1e-3,
             weight_decay=1e-3,
-            patience=12,
+            patience=48,
             label_smoothing=0.1,
         ),
         "augment_cfg": AugmentConfig(specaugment=False, mixup=False),
@@ -106,10 +108,10 @@ MODEL_CONFIGS = {
     "Moderately Regularised CNN": {
         "factory": moderate_factory,
         "train_cfg": TrainConfig(
-            epochs=60,
+            epochs=300,
             lr=1e-3,
             weight_decay=1e-4,
-            patience=12,
+            patience=48,
             label_smoothing=0.1,
         ),
         "augment_cfg": AugmentConfig(specaugment=False, mixup=False),
@@ -119,16 +121,16 @@ MODEL_CONFIGS = {
     "ResNet CNN": {
         "factory": resnet_factory,
         "train_cfg": TrainConfig(
-            epochs=60,
+            epochs=300,
             lr=1e-3,
-            weight_decay=2e-4,
-            patience=12,
-            label_smoothing=0.08,
+            weight_decay=5e-4,
+            patience=48,
+            label_smoothing=0.10,
             optimizer="adamw",
         ),
         "augment_cfg": AugmentConfig(specaugment=False, mixup=False),
-        "spec_t": 25,
-        "spec_f": 15,
+        "spec_t": 30,
+        "spec_f": 20,
     },
 }
 
@@ -247,6 +249,14 @@ def extract_track_segments(track_id):
 
 def build_segment_cache(track_ids, labels):
     print_section("Build segment cache")
+    missing = [track_id for track_id in track_ids if not audio_path(track_id).exists()]
+    if missing:
+        examples = ", ".join(str(int(track_id)) for track_id in missing[:5])
+        raise FileNotFoundError(
+            f"Missing {len(missing)} FMA-small audio files under {FMA_AUDIO}. "
+            f"Examples: {examples}. Run extract_mel_segments.py locally where the audio exists, "
+            f"then copy {SEGMENT_CACHE.relative_to(ROOT)} to this environment."
+        )
     print(f"Tracks: {len(track_ids)}  segments_per_track={SEGMENTS_PER_TRACK}")
     segments = []
     for track_id in tqdm(track_ids, desc="Segment extraction"):
@@ -267,14 +277,36 @@ def build_segment_cache(track_ids, labels):
 def load_segment_cache(expected_track_ids, expected_labels):
     if SEGMENT_CACHE.exists():
         data = np.load(SEGMENT_CACHE, allow_pickle=True)
+        required = {"segments", "labels", "track_ids", "segments_per_track", "segment_frames"}
+        labels_ok = (
+            "labels" in data.files
+            and len(data["labels"]) == len(expected_labels)
+            and np.array_equal(data["labels"], expected_labels)
+        )
+        track_ids_ok = (
+            "track_ids" in data.files
+            and (
+                expected_track_ids is None
+                or np.array_equal(data["track_ids"], expected_track_ids)
+            )
+        )
         ok = (
-            "segments" in data.files
+            required.issubset(data.files)
             and int(data["segments_per_track"]) == SEGMENTS_PER_TRACK
             and int(data["segment_frames"]) == SEGMENT_FRAMES
-            and np.array_equal(data["track_ids"], expected_track_ids)
+            and labels_ok
+            and track_ids_ok
         )
         if ok:
             return data["segments"], data["labels"], data["track_ids"]
+        print_section("Segment cache mismatch")
+        print(f"Ignoring stale cache: {SEGMENT_CACHE.relative_to(ROOT)}")
+    if expected_track_ids is None:
+        raise ValueError(
+            "Missing track_ids for segment extraction and no compatible "
+            "features/mel_segments.npz cache was found. Run extract_mel_segments.py "
+            "locally where the original audio exists, then copy the cache to this environment."
+        )
     return build_segment_cache(expected_track_ids, expected_labels)
 
 
@@ -303,7 +335,15 @@ class SegmentDataset(Dataset):
         return mel, torch.tensor(label, dtype=torch.long), torch.tensor(track_pos, dtype=torch.long)
 
 
-def train_segment_epoch(model, loader, optimizer, criterion, augment_cfg, scaler=None, use_amp=False):
+def train_segment_epoch(
+    model,
+    loader,
+    optimizer,
+    criterion,
+    augment_cfg,
+    scaler=None,
+    use_amp=False,
+):
     model.train()
     total_loss, correct, n = 0.0, 0, 0
     for X, y, _track_pos in loader:
@@ -367,6 +407,7 @@ def evaluate_track_level(model, loader, criterion, track_indices, labels, n_clas
 def run_segment_model(model_cfg, label, segments, y, le, idx_train, idx_val, idx_test):
     train_cfg = model_cfg["train_cfg"]
     augment_cfg = model_cfg["augment_cfg"]
+    seed_everything()
     model = model_cfg["factory"](len(le.classes_)).to(DEVICE)
     param_count, trainable_param_count = count_parameters(model)
     print(f"\n{label}: parameters={param_count:,} (trainable={trainable_param_count:,})")
@@ -374,7 +415,7 @@ def run_segment_model(model_cfg, label, segments, y, le, idx_train, idx_val, idx
     use_amp = train_cfg.amp and DEVICE.type == "cuda"
     scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
     optimizer = make_optimizer(model, train_cfg)
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=train_cfg.epochs)
+    scheduler = make_scheduler(optimizer, train_cfg)
     criterion = nn.CrossEntropyLoss(label_smoothing=train_cfg.label_smoothing)
 
     train_loader = DataLoader(
@@ -393,7 +434,7 @@ def run_segment_model(model_cfg, label, segments, y, le, idx_train, idx_val, idx
     best_state, best_epoch, best_val_f1 = None, 0, -1.0
     best_val_true, best_val_pred, best_val_proba = None, None, None
     no_improve = 0
-    history = {"train_loss": [], "train_acc": [], "val_loss": [], "val_acc": [], "val_f1": []}
+    history = {"train_loss": [], "train_acc": [], "val_loss": [], "val_acc": [], "val_f1": [], "lr": []}
     start_time = time.perf_counter()
 
     for epoch in range(1, train_cfg.epochs + 1):
@@ -415,13 +456,14 @@ def run_segment_model(model_cfg, label, segments, y, le, idx_train, idx_val, idx
             len(le.classes_),
             use_amp=use_amp,
         )
-        scheduler.step()
+        scheduler.step(val_f1)
 
         history["train_loss"].append(tr_loss)
         history["train_acc"].append(tr_acc)
         history["val_loss"].append(val_loss)
         history["val_acc"].append(val_acc)
         history["val_f1"].append(val_f1)
+        history["lr"].append(current_lr(optimizer))
 
         if val_f1 > best_val_f1:
             best_state = clone_state_dict(model)
@@ -435,7 +477,8 @@ def run_segment_model(model_cfg, label, segments, y, le, idx_train, idx_val, idx
         if epoch % 5 == 0 or epoch == 1:
             print(
                 f"  Epoch {epoch:3d}/{train_cfg.epochs}  loss={tr_loss:.4f}  "
-                f"train={tr_acc:.4f}  val_acc={val_acc:.4f}  val_f1={val_f1:.4f}",
+                f"train={tr_acc:.4f}  val_acc={val_acc:.4f}  "
+                f"val_f1={val_f1:.4f}  lr={current_lr(optimizer):.2e}",
                 flush=True,
             )
         if no_improve >= train_cfg.patience:
@@ -456,7 +499,7 @@ def run_segment_model(model_cfg, label, segments, y, le, idx_train, idx_val, idx
     epochs_run = len(history["train_loss"])
     print(
         f"\n{label}: best_epoch={best_epoch}  val_f1={best_val_f1:.4f}  "
-        f"test_acc={test_acc:.4f}  test_f1={test_f1:.4f}  time={training_seconds:.1f}s",
+        f"test_acc={test_acc:.4f}  test_f1={test_f1:.4f}  runtime={training_seconds:.1f}s",
         flush=True,
     )
 

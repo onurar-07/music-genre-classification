@@ -12,14 +12,14 @@ def plain_factory(n_classes):
 
 def main():
     mels, _labels, track_ids, le, y, idx_train, idx_val, idx_test = prepare_data()
-    cfg = TrainConfig(epochs=60, lr=1e-3, weight_decay=1e-4, patience=12)
+    cfg = TrainConfig(epochs=300, lr=1e-3, weight_decay=1e-4, patience=48)
 
     print_section("2.1 Plain CNN")
 
     results = [
         run_model(
             plain_factory,
-            "Plain CNN - no augmentation",
+            "Plain CNN",
             mels,
             y,
             le,

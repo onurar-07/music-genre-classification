@@ -15,14 +15,16 @@ term_project/
 ├── extract_features.py              # Part 1 — extract handcrafted features
 ├── handcrafted_feature_baseline.py  # Part 1 — RF/MLP handcrafted baseline
 ├── extract_mel_specs.py             # Part 2 — extract cached mel spectrograms
+├── extract_mel_segments.py          # Part 2.5 — extract cached mel segments locally
 ├── plain_cnn.py                     # Part 2.1 — Plain CNN
 ├── regularisation_ablation.py       # Part 2.2 — regularisation ablation
 ├── resnet_cnn.py                    # Part 2.3 — ResNet CNN
 ├── augmentation_ablation.py         # Part 2.4 — augmentation ablation
 ├── segment_averaging.py             # Part 2.5 — segment training + track averaging
+├── run_GPU.ipynb                    # Colab GPU notebook for model training
 ├── hybrid_late_fusion.py            # Part 3 — Hybrid Modal
 ├── error_analysis.py                # Part 4 — error analysis
-├── model_complexity_summary.py      # Summarise parameter counts and training times
+├── model_complexity_summary.py      # Summarise parameter counts and training runtimes
 ├── cnn_training_utils.py # Shared CNN models, augmentations, training loop
 ├── reporting_utils.py  # Shared split, metrics, plots, and reports
 ├── requirements.txt
@@ -58,11 +60,6 @@ curl -O https://os.unil.cloud.switch.ch/fma/fma_small.zip
 7z x fma_small.zip -o.
 ```
 
-> **macOS note:** the built-in `unzip` does not support the zip format used here.  
-> Use `7z` instead: `brew install p7zip` if you don't have it.
-
-After extraction your `data/` folder should look like this:
-
 ```
 data/
 ├── fma_small/
@@ -81,6 +78,23 @@ data/
 
 ## 3. Run the pipeline
 
+Recommended workflow:
+
+1. **Local machine:** keep the raw FMA audio in `data/fma_small/` and run the
+   feature extraction scripts once:
+
+   ```bash
+   python3 extract_features.py
+   python3 extract_mel_specs.py
+   python3 extract_mel_segments.py
+   ```
+
+2. **Colab GPU:** copy the project with the generated `features/*.npz` files,
+   then run `run_GPU.ipynb` to train and evaluate the models.
+
+Do not rerun feature extraction on Colab unless the raw FMA audio is also
+available there.
+
 Run Part 1 first for handcrafted baselines, Part 2 for CNN optimisation,
 Part 3 for Hybrid Modal, then Part 4 for error analysis.
 
@@ -90,13 +104,13 @@ model/epoch; final metrics are reported on the held-out test split.
 
 ## Part 1 — Handcrafted Baseline
 
-### Step 1 — Extract handcrafted features (~30 min, runs once)
+### Step 1 — Extract handcrafted features locally (~30 min, runs once)
 ```bash
 python3 extract_features.py
 ```
 Saves `features/features.npz` with timbre, harmony, rhythm, and combined feature vectors.
 
-### Step 2 — Random Forest vs MLP on handcrafted features
+### Step 2 — Random Forest vs MLP on handcrafted features (Colab or local)
 ```bash
 python3 handcrafted_feature_baseline.py
 ```
@@ -107,7 +121,7 @@ Saves unified outputs and branch probabilities for later hybrid fusion to
 
 ## Part 2 — CNN Optimisation
 
-### Step 0 — Extract mel spectrograms (~30 min, runs once)
+### Step 0 — Extract mel spectrograms locally (~30 min, runs once)
 ```bash
 python3 extract_mel_specs.py
 ```
@@ -147,6 +161,12 @@ then trains SpecAugment, Mixup, and SpecAugment + Mixup on the selected model.
 Saves unified outputs to `results/2.4 Augmentation ablation/`.
 
 ### 2.5 — Segment Averaging
+Requires the local segment cache:
+```bash
+python3 extract_mel_segments.py
+```
+This writes `features/mel_segments.npz`.
+
 ```bash
 python3 segment_averaging.py
 ```
@@ -183,8 +203,8 @@ most common confusion pairs, and writes next-improvement notes to
 python3 model_complexity_summary.py
 ```
 Writes architecture parameter counts to `results/model_parameter_counts.csv`.
-After experiments have been rerun, it also collects recorded training times from
-each `metrics.csv` into `results/model_training_times.csv`.
+After experiments have been rerun, it also collects recorded training runtimes from
+each `metrics.csv` into `results/model_training_runtimes.csv`.
 
 ---
 
@@ -194,7 +214,7 @@ Each experiment writes the same core output files inside its own subdirectory:
 
 | File | Description |
 |---|---|
-| `metrics.csv` | Validation/test accuracy, F1, parameter counts, epochs run, and training time |
+| `metrics.csv` | Validation/test accuracy, F1, parameter counts, epochs run, and training runtime |
 | `metrics.png` | Compact multi-model test accuracy/F1 comparison; skipped for single-model experiments |
 | `classification_report.txt` | Test classification report for the validation-selected best model |
 | `confusion_matrix.png` | Test confusion matrix for the validation-selected best model |

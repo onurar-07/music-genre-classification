@@ -1,4 +1,4 @@
-"""Summarise model parameter counts and recorded training times."""
+"""Summarise model parameter counts and recorded training runtimes."""
 
 import pandas as pd
 
@@ -76,16 +76,16 @@ def main():
 
     training_df = recorded_training_rows()
     if training_df.empty:
-        print_section("Recorded training times")
-        print("No metrics.csv files with training time found yet.")
+        print_section("Recorded training runtimes")
+        print("No metrics.csv files with training runtime found yet.")
         print_saved_outputs(RESULTS_ROOT, ["model_parameter_counts.csv"])
         return
 
-    train_path = RESULTS_ROOT / "model_training_times.csv"
+    train_path = RESULTS_ROOT / "model_training_runtimes.csv"
     training_df.to_csv(train_path, index=False)
-    print_section("Recorded training times")
+    print_section("Recorded training runtimes")
     print(training_df.to_string(index=False))
-    print_saved_outputs(RESULTS_ROOT, ["model_parameter_counts.csv", "model_training_times.csv"])
+    print_saved_outputs(RESULTS_ROOT, ["model_parameter_counts.csv", "model_training_runtimes.csv"])
 
 
 if __name__ == "__main__":

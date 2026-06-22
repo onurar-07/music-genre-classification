@@ -1,40 +1,40 @@
 Error analysis
 Source predictions: results/3 Hybrid Modal/predictions.csv
-Overall accuracy: 0.5906
+Overall accuracy: 0.6388
 
 Weakest classes by recall:
-   true_label  support  correct  errors  recall
-          Pop      200       36     164   0.180
- Experimental      200       79     121   0.395
-International      200      121      79   0.605
- Instrumental      200      130      70   0.650
-   Electronic      200      135      65   0.675
+  true_label  support  correct  errors  recall
+         Pop      200       67     133   0.335
+Experimental      200       99     101   0.495
+Instrumental      200      128      72   0.640
+        Rock      200      129      71   0.645
+  Electronic      200      134      66   0.670
 
 Most common confusion pairs:
-   true_label    pred_label  count
-          Pop          Rock     51
- Experimental  Instrumental     30
-      Hip-Hop    Electronic     25
- Experimental    Electronic     25
-          Pop    Electronic     23
-          Pop          Folk     23
-          Pop International     22
- Experimental          Rock     21
-International          Folk     21
-         Rock           Pop     20
+  true_label    pred_label  count
+         Pop          Rock     33
+         Pop International     27
+Experimental  Instrumental     25
+     Hip-Hop    Electronic     24
+        Rock           Pop     22
+         Pop          Folk     20
+        Rock          Folk     19
+Instrumental          Folk     18
+Experimental           Pop     18
+Experimental          Folk     17
 
 Highest-confidence errors:
-  true_label    pred_label  confidence  confidence_margin
-        Rock    Electronic    0.962563           0.950443
-  Electronic International    0.877116           0.832502
-         Pop       Hip-Hop    0.846217           0.784891
-         Pop    Electronic    0.811914           0.733772
-Instrumental          Rock    0.810224           0.713559
-         Pop          Rock    0.794379           0.683765
-     Hip-Hop  Instrumental    0.788729           0.729814
-         Pop International    0.780593           0.700758
-         Pop          Folk    0.774757           0.695341
-  Electronic       Hip-Hop    0.767700           0.679735
+ track_id    true_label    pred_label  confidence  confidence_margin                      mp3_path
+   113305          Rock    Electronic    0.953935           0.930654 data/fma_small/113/113305.mp3
+   127289           Pop          Folk    0.935692           0.915856 data/fma_small/127/127289.mp3
+    87187           Pop          Folk    0.919211           0.892571 data/fma_small/087/087187.mp3
+   131436           Pop          Rock    0.881143           0.819923 data/fma_small/131/131436.mp3
+    74377  Experimental          Folk    0.875850           0.813555 data/fma_small/074/074377.mp3
+   115321    Electronic       Hip-Hop    0.855560           0.805819 data/fma_small/115/115321.mp3
+    58063  Experimental    Electronic    0.851943           0.788209 data/fma_small/058/058063.mp3
+    13362           Pop International    0.846289           0.788727 data/fma_small/013/013362.mp3
+    73777 International       Hip-Hop    0.823525           0.751295 data/fma_small/073/073777.mp3
+   126183  Instrumental          Rock    0.818114           0.717957 data/fma_small/126/126183.mp3
 
 Suggested next improvements:
 - Segment-based training to expose more local temporal detail.

@@ -47,15 +47,15 @@ def print_metrics_summary(metrics_df: pd.DataFrame, title="Summary"):
     rename = {
         "accuracy": "test_acc",
         "f1_macro": "test_f1",
-        "training_seconds": "time",
+        "training_seconds": "runtime",
     }
     summary = summary.rename(columns=rename)
     summary = summary.sort_values("test_f1", ascending=False)
     for col in ["val_f1", "test_f1", "test_acc"]:
         if col in summary:
             summary[col] = summary[col].map(lambda x: f"{x:.4f}" if pd.notna(x) else "")
-    if "time" in summary:
-        summary["time"] = summary["time"].map(format_seconds)
+    if "runtime" in summary:
+        summary["runtime"] = summary["runtime"].map(format_seconds)
     keep = [
         "model",
         "val_f1",
@@ -63,7 +63,7 @@ def print_metrics_summary(metrics_df: pd.DataFrame, title="Summary"):
         "test_acc",
         "best_epoch",
         "epochs_run",
-        "time",
+        "runtime",
         "param_count",
     ]
     keep = [col for col in keep if col in summary.columns]

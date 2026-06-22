@@ -62,13 +62,13 @@ def resnet_factory(n_classes):
 
 
 MODEL_CONFIGS = {
-    "Plain CNN - no augmentation": {
+    "Plain CNN": {
         "factory": plain_factory,
         "train_cfg": TrainConfig(
-            epochs=60,
+            epochs=300,
             lr=1e-3,
             weight_decay=1e-4,
-            patience=12,
+            patience=48,
         ),
         "spec_t": 25,
         "spec_f": 15,
@@ -76,10 +76,10 @@ MODEL_CONFIGS = {
     "Heavily Regularised CNN": {
         "factory": heavy_factory,
         "train_cfg": TrainConfig(
-            epochs=60,
-            lr=5e-4,
+            epochs=300,
+            lr=1e-3,
             weight_decay=1e-3,
-            patience=12,
+            patience=48,
             label_smoothing=0.1,
         ),
         "spec_t": 40,
@@ -88,10 +88,10 @@ MODEL_CONFIGS = {
     "Moderately Regularised CNN": {
         "factory": moderate_factory,
         "train_cfg": TrainConfig(
-            epochs=60,
+            epochs=300,
             lr=1e-3,
             weight_decay=1e-4,
-            patience=12,
+            patience=48,
             label_smoothing=0.1,
         ),
         "spec_t": 30,
@@ -100,15 +100,15 @@ MODEL_CONFIGS = {
     "ResNet CNN": {
         "factory": resnet_factory,
         "train_cfg": TrainConfig(
-            epochs=60,
+            epochs=300,
             lr=1e-3,
-            weight_decay=2e-4,
-            patience=12,
-            label_smoothing=0.08,
+            weight_decay=5e-4,
+            patience=48,
+            label_smoothing=0.10,
             optimizer="adamw",
         ),
-        "spec_t": 25,
-        "spec_f": 15,
+        "spec_t": 30,
+        "spec_f": 20,
     },
 }
 
@@ -163,7 +163,7 @@ def select_model():
     baseline_path = RESULTS_ROOT / source / "metrics.csv"
     baseline = pd.read_csv(baseline_path)
     baseline = baseline[baseline["model"] == selected_model].copy()
-    baseline["model"] = f"{selected_model} - no augmentation"
+    baseline["model"] = selected_model
     baseline["probability_source_dir"] = source
     baseline["probability_model"] = selected_model
     baseline.to_csv(OUT_DIR / "no_augmentation_baseline.csv", index=False)

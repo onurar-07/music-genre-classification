@@ -37,15 +37,18 @@ RANDOM_SEED = 42
 
 @dataclass
 class TrainConfig:
-    epochs: int = 60
-    batch_size: int = 64
+    epochs: int = 300
+    batch_size: int = 512
     lr: float = 1e-3
     weight_decay: float = 1e-4
-    patience: int = 12
+    patience: int = 48
     label_smoothing: float = 0.0
     optimizer: str = "adam"
     num_workers: int = 2
     amp: bool = True
+    lr_factor: float = 0.5
+    lr_patience: int = 8
+    min_lr: float = 1e-6
 
 
 @dataclass
@@ -231,21 +234,28 @@ class ResNetGenreCNN(nn.Module):
     def __init__(
         self,
         n_classes=8,
-        stage_dropouts=(0.08, 0.10, 0.15, 0.20),
-        classifier_dropout=0.45,
+        channels=(16, 32, 64, 96),
+        stage_blocks=(1, 1, 1, 1),
+        stage_dropouts=(0.05, 0.08, 0.12, 0.16),
+        stem_dropout=0.05,
+        pre_pool_dropout=0.15,
+        classifier_dropout=0.50,
     ):
         super().__init__()
+        c1, c2, c3, c4 = channels
         self.stem = nn.Sequential(
-            nn.Conv2d(1, 32, 3, padding=1, bias=False),
-            nn.BatchNorm2d(32),
+            nn.Conv2d(1, c1, 3, padding=1, bias=False),
+            nn.BatchNorm2d(c1),
             nn.ReLU(inplace=True),
         )
-        self.stage1 = self._make_stage(32, 32, blocks=2, stride=1, dropout=stage_dropouts[0])
-        self.stage2 = self._make_stage(32, 64, blocks=2, stride=2, dropout=stage_dropouts[1])
-        self.stage3 = self._make_stage(64, 128, blocks=2, stride=2, dropout=stage_dropouts[2])
-        self.stage4 = self._make_stage(128, 256, blocks=1, stride=2, dropout=stage_dropouts[3])
+        self.stem_dropout = nn.Dropout2d(stem_dropout)
+        self.stage1 = self._make_stage(c1, c1, blocks=stage_blocks[0], stride=1, dropout=stage_dropouts[0])
+        self.stage2 = self._make_stage(c1, c2, blocks=stage_blocks[1], stride=2, dropout=stage_dropouts[1])
+        self.stage3 = self._make_stage(c2, c3, blocks=stage_blocks[2], stride=2, dropout=stage_dropouts[2])
+        self.stage4 = self._make_stage(c3, c4, blocks=stage_blocks[3], stride=2, dropout=stage_dropouts[3])
+        self.pre_pool_dropout = nn.Dropout2d(pre_pool_dropout)
         self.pool = nn.AdaptiveAvgPool2d(1)
-        self.classifier = nn.Sequential(nn.Dropout(classifier_dropout), nn.Linear(256, n_classes))
+        self.classifier = nn.Sequential(nn.Dropout(classifier_dropout), nn.Linear(c4, n_classes))
 
     @staticmethod
     def _make_stage(in_ch, out_ch, blocks, stride, dropout):
@@ -256,10 +266,12 @@ class ResNetGenreCNN(nn.Module):
 
     def forward(self, x):
         x = self.stem(x)
+        x = self.stem_dropout(x)
         x = self.stage1(x)
         x = self.stage2(x)
         x = self.stage3(x)
         x = self.stage4(x)
+        x = self.pre_pool_dropout(x)
         x = self.pool(x).flatten(1)
         return self.classifier(x)
 
@@ -274,7 +286,15 @@ def mixup_loss(criterion, pred, y_a, y_b, lam):
     return lam * criterion(pred, y_a) + (1 - lam) * criterion(pred, y_b)
 
 
-def train_epoch(model, loader, optimizer, criterion, augment_cfg, scaler=None, use_amp=False):
+def train_epoch(
+    model,
+    loader,
+    optimizer,
+    criterion,
+    augment_cfg,
+    scaler=None,
+    use_amp=False,
+):
     model.train()
     total_loss, correct, n = 0.0, 0, 0
     for X, y in loader:
@@ -356,6 +376,20 @@ def make_optimizer(model, cfg: TrainConfig):
     return optim.Adam(model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
 
 
+def make_scheduler(optimizer, cfg: TrainConfig):
+    return optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer,
+        mode="max",
+        factor=cfg.lr_factor,
+        patience=cfg.lr_patience,
+        min_lr=cfg.min_lr,
+    )
+
+
+def current_lr(optimizer):
+    return optimizer.param_groups[0]["lr"]
+
+
 def run_model(
     model_factory,
     label,
@@ -370,6 +404,7 @@ def run_model(
 ):
     train_cfg = train_cfg or TrainConfig()
     augment_cfg = augment_cfg or AugmentConfig()
+    seed_everything()
     model = model_factory(len(le.classes_)).to(DEVICE)
     param_count, trainable_param_count = count_parameters(model)
     print(
@@ -380,7 +415,7 @@ def run_model(
     use_amp = train_cfg.amp and DEVICE.type == "cuda"
     scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
     optimizer = make_optimizer(model, train_cfg)
-    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=train_cfg.epochs)
+    scheduler = make_scheduler(optimizer, train_cfg)
     criterion = nn.CrossEntropyLoss(label_smoothing=train_cfg.label_smoothing)
 
     train_loader = DataLoader(
@@ -399,7 +434,7 @@ def run_model(
     best_state, best_epoch, best_val_f1 = None, 0, -1.0
     best_val_true, best_val_pred, best_val_proba = None, None, None
     no_improve = 0
-    history = {"train_loss": [], "train_acc": [], "val_loss": [], "val_acc": [], "val_f1": []}
+    history = {"train_loss": [], "train_acc": [], "val_loss": [], "val_acc": [], "val_f1": [], "lr": []}
     start_time = time.perf_counter()
 
     for epoch in range(1, train_cfg.epochs + 1):
@@ -418,13 +453,14 @@ def run_model(
             criterion,
             use_amp=use_amp,
         )
-        scheduler.step()
+        scheduler.step(val_f1)
 
         history["train_loss"].append(tr_loss)
         history["train_acc"].append(tr_acc)
         history["val_loss"].append(val_loss)
         history["val_acc"].append(val_acc)
         history["val_f1"].append(val_f1)
+        history["lr"].append(current_lr(optimizer))
 
         if val_f1 > best_val_f1:
             best_state = clone_state_dict(model)
@@ -439,7 +475,8 @@ def run_model(
         if epoch % 5 == 0 or epoch == 1:
             print(
                 f"  Epoch {epoch:3d}/{train_cfg.epochs}  loss={tr_loss:.4f}  "
-                f"train={tr_acc:.4f}  val_acc={val_acc:.4f}  val_f1={val_f1:.4f}",
+                f"train={tr_acc:.4f}  val_acc={val_acc:.4f}  "
+                f"val_f1={val_f1:.4f}  lr={current_lr(optimizer):.2e}",
                 flush=True,
             )
         if no_improve >= train_cfg.patience:
@@ -458,7 +495,7 @@ def run_model(
     print(
         f"\n{label}: best_epoch={best_epoch}  val_f1={best_val_f1:.4f}  "
         f"test_acc={test_acc:.4f}  test_f1={test_f1:.4f}  "
-        f"time={training_seconds:.1f}s",
+        f"runtime={training_seconds:.1f}s",
         flush=True,
     )
 
