@@ -276,6 +276,47 @@ class ResNetGenreCNN(nn.Module):
         return self.classifier(x)
 
 
+class MultiShapeCNN(nn.Module):
+    def __init__(self, n_classes=8):
+        super().__init__()
+
+        self.local_branch = nn.Sequential(
+            nn.Conv2d(1, 32, kernel_size=(3, 3), padding=(1, 1), bias=False),
+            nn.BatchNorm2d(32),
+            nn.ReLU(),
+            nn.MaxPool2d(2),
+        )
+
+        self.timbre_branch = nn.Sequential(
+            nn.Conv2d(1, 32, kernel_size=(32, 3), padding=(16, 1), bias=False),
+            nn.BatchNorm2d(32),
+            nn.ReLU(),
+            nn.MaxPool2d(2),
+        )
+
+        self.temporal_branch = nn.Sequential(
+            nn.Conv2d(1, 32, kernel_size=(3, 15), padding=(1, 7), bias=False),
+            nn.BatchNorm2d(32),
+            nn.ReLU(),
+            nn.MaxPool2d(2),
+        )
+
+        self.pool = nn.AdaptiveAvgPool2d(1)
+
+        self.classifier = nn.Sequential(
+            nn.Dropout(0.5),
+            nn.Linear(32 * 3, n_classes),
+        )
+
+    def forward(self, x):
+        x1 = self.pool(self.local_branch(x)).flatten(1)
+        x2 = self.pool(self.timbre_branch(x)).flatten(1)
+        x3 = self.pool(self.temporal_branch(x)).flatten(1)
+
+        x = torch.cat([x1, x2, x3], dim=1)
+        return self.classifier(x)
+
+
 def mixup_batch(X, y, alpha):
     lam = float(np.random.beta(alpha, alpha))
     idx = torch.randperm(X.size(0), device=X.device)

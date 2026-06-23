@@ -1,0 +1,10 @@
+Model selected for segment-based training
+
+                   source                                            model  accuracy  f1_macro  best_epoch
+2.5 Augmentation ablation                       Moderately Regularised CNN  0.594531  0.586883          90
+2.5 Augmentation ablation               Moderately Regularised CNN - Mixup  0.588281  0.578755         125
+2.5 Augmentation ablation Moderately Regularised CNN - SpecAugment + Mixup  0.566406  0.553100          99
+2.5 Augmentation ablation         Moderately Regularised CNN - SpecAugment  0.564063  0.550159         132
+
+Selected model: Moderately Regularised CNN
+Selected validation F1-macro: 0.5869

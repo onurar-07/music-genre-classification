@@ -2,7 +2,7 @@
 
 import pandas as pd
 
-from cnn_training_utils import PlainCNN, RegularisedCNN, ResNetGenreCNN, count_parameters
+from cnn_training_utils import MultiShapeCNN, PlainCNN, RegularisedCNN, ResNetGenreCNN, count_parameters
 from reporting_utils import RESULTS_ROOT, print_saved_outputs, print_section
 
 
@@ -26,6 +26,7 @@ def architecture_rows():
             ),
         ),
         ("ResNet CNN", ResNetGenreCNN(n_classes=8)),
+        ("Multi-shape CNN", MultiShapeCNN(n_classes=8)),
     ]
     rows = []
     for name, model in models:

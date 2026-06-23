@@ -1,9 +1,10 @@
-"""Part 2.4: augmentation ablation on the best selected CNN architecture.
+"""Part 2.5: augmentation ablation on the best selected CNN architecture.
 
 This script first compares the validation results from:
   - Part 2.1: Plain CNN
   - Part 2.2: Regularisation ablation
   - Part 2.3: ResNet CNN
+  - Part 2.4: Multi-shape CNN
 
 It then selects the best architecture by validation F1-macro and runs the
 augmentation ablation on that selected model:
@@ -25,6 +26,7 @@ from reporting_utils import (
 )
 from cnn_training_utils import (
     AugmentConfig,
+    MultiShapeCNN,
     PlainCNN,
     RegularisedCNN,
     ResNetGenreCNN,
@@ -34,7 +36,7 @@ from cnn_training_utils import (
     run_model,
 )
 
-OUT_DIR = experiment_dir("2.4 Augmentation ablation")
+OUT_DIR = experiment_dir("2.5 Augmentation ablation")
 
 
 def heavy_factory(n_classes):
@@ -59,6 +61,10 @@ def moderate_factory(n_classes):
 
 def resnet_factory(n_classes):
     return ResNetGenreCNN(n_classes=n_classes)
+
+
+def multi_shape_factory(n_classes):
+    return MultiShapeCNN(n_classes=n_classes)
 
 
 MODEL_CONFIGS = {
@@ -110,6 +116,17 @@ MODEL_CONFIGS = {
         "spec_t": 30,
         "spec_f": 20,
     },
+    "Multi-shape CNN": {
+        "factory": multi_shape_factory,
+        "train_cfg": TrainConfig(
+            epochs=300,
+            lr=1e-3,
+            weight_decay=1e-4,
+            patience=48,
+        ),
+        "spec_t": 30,
+        "spec_f": 20,
+    },
 }
 
 
@@ -118,12 +135,14 @@ def load_candidate_metrics():
         RESULTS_ROOT / "2.1 Plain CNN" / "metrics.csv",
         RESULTS_ROOT / "2.2 Regularisation ablation" / "metrics.csv",
         RESULTS_ROOT / "2.3 ResNet CNN" / "metrics.csv",
+        RESULTS_ROOT / "2.4 Multi-shape CNN" / "metrics.csv",
     ]
     missing = [p for p in paths if not p.exists()]
     if missing:
         missing_text = "\n".join(f"  {p}" for p in missing)
         raise FileNotFoundError(
-            "Run plain_cnn.py, regularisation_ablation.py, and resnet_cnn.py before augmentation_ablation.py.\n"
+            "Run plain_cnn.py, regularisation_ablation.py, resnet_cnn.py, "
+            "and multi_shape_cnn.py before augmentation_ablation.py.\n"
             f"Missing:\n{missing_text}"
         )
 
@@ -136,7 +155,7 @@ def load_candidate_metrics():
     candidates = pd.concat(rows, ignore_index=True)
     candidates = candidates[candidates["model"].isin(MODEL_CONFIGS)]
     if candidates.empty:
-        raise ValueError("No known candidate models found in 2.1/2.2/2.3 metrics.")
+        raise ValueError("No known candidate models found in 2.1/2.2/2.3/2.4 metrics.")
     return candidates.sort_values("f1_macro", ascending=False)
 
 
@@ -185,7 +204,7 @@ def main():
     selected_model, selected_cfg, baseline_metrics = select_model()
     mels, _labels, track_ids, le, y, idx_train, idx_val, idx_test = prepare_data()
 
-    print_section(f"2.4 Augmentation ablation - {selected_model}")
+    print_section(f"2.5 Augmentation ablation - {selected_model}")
 
     results = [
         run_model(
@@ -207,13 +226,13 @@ def main():
         )
     ]
 
-    trained_metrics = finalize_experiment(results, OUT_DIR, le.classes_, "2.4 Augmentation ablation", track_ids=track_ids)
+    trained_metrics = finalize_experiment(results, OUT_DIR, le.classes_, "2.5 Augmentation ablation", track_ids=track_ids)
 
     comparison = pd.concat([baseline_metrics, trained_metrics], ignore_index=True, sort=False)
     comparison.loc[comparison["probability_source_dir"].isna(), "probability_source_dir"] = OUT_DIR.name
     comparison.loc[comparison["probability_model"].isna(), "probability_model"] = comparison["model"]
     comparison.to_csv(OUT_DIR / "augmentation_comparison.csv", index=False)
-    plot_metrics(comparison, OUT_DIR, "2.4 Augmentation comparison with reused no-augmentation baseline")
+    plot_metrics(comparison, OUT_DIR, "2.5 Augmentation comparison with reused no-augmentation baseline")
     print_metrics_summary(comparison, "Augmentation comparison")
     print_saved_outputs(
         OUT_DIR,
