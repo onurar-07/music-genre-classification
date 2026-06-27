@@ -212,7 +212,7 @@ def main():
     print(f"Loading feature extractor from {MODEL_NAME}")
     fe = ASTFeatureExtractor.from_pretrained(MODEL_NAME)
 
-    loader_kw = dict(num_workers=2, pin_memory=DEVICE.type == "cuda")
+    loader_kw = dict(num_workers=0, pin_memory=DEVICE.type == "cuda")
     train_loader = DataLoader(
         FMADataset(track_ids[idx_train], y[idx_train], fe, train=True),
         batch_size=16, shuffle=True, **loader_kw,
