@@ -1,0 +1,5 @@
+CNN branch selected for Segment Transformer
+
+Selected model: Multi-shape CNN - Mixup
+SpecAugment: False
+Mixup: True

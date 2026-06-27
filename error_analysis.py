@@ -10,6 +10,7 @@ from reporting_utils import RESULTS_ROOT, experiment_dir, print_saved_outputs
 OUT_DIR = experiment_dir("4 Error analysis")
 PREFERRED_PREDICTIONS = [
     RESULTS_ROOT / "3 Hybrid Modal" / "predictions.csv",
+    RESULTS_ROOT / "2.6 Segment Transformer" / "predictions.csv",
     RESULTS_ROOT / "2.5 Segment Averaging" / "predictions.csv",
     RESULTS_ROOT / "2.4 Augmentation ablation" / "predictions.csv",
     RESULTS_ROOT / "2.3 Multi-shape CNN" / "predictions.csv",

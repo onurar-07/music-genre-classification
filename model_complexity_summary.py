@@ -10,6 +10,7 @@ from cnn_training_utils import (
     count_parameters,
 )
 from reporting_utils import RESULTS_ROOT, print_saved_outputs, print_section
+from segment_transformer import SegmentTransformer
 
 
 def architecture_rows():
@@ -18,6 +19,7 @@ def architecture_rows():
         ("Plain CNN - Regularisation", PlainCNNRegularisation(n_classes=8)),
         ("ResNet CNN", ResNetGenreCNN(n_classes=8)),
         ("Multi-shape CNN", MultiShapeCNN(n_classes=8)),
+        ("Segment Transformer", SegmentTransformer(n_classes=8, n_segments=4)),
     ]
     rows = []
     for name, model in models:

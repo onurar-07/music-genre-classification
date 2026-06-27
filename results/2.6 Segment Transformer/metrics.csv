@@ -1,0 +1,3 @@
+model,split,accuracy,f1_macro,best_epoch,best_val_f1,param_count,trainable_param_count,training_seconds,epochs_run
+Multi-shape CNN - Mixup - Segment Transformer,val,0.63671875,0.6385890139384753,73,0.6385890139384753,693096,693096,3165.064857815,121
+Multi-shape CNN - Mixup - Segment Transformer,test,0.625,0.6293841365517197,73,0.6385890139384753,693096,693096,3165.064857815,121

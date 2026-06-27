@@ -8,21 +8,38 @@ from sklearn.metrics import accuracy_score, f1_score
 
 from cnn_training_utils import (
     finalize_experiment,
-    load_mel_cache,
     make_split,
 )
-from reporting_utils import RESULTS_ROOT, experiment_dir, print_saved_outputs, print_section
+from reporting_utils import RESULTS_ROOT, ROOT, experiment_dir, print_saved_outputs, print_section
 
 OUT_DIR = experiment_dir("3 Hybrid Modal")
 HANDCRAFTED_DIR = RESULTS_ROOT / "1 Random Forest vs MLP"
+MEL_CACHE = ROOT / "features" / "mel_specs.npz"
+SEGMENT_CACHE = ROOT / "features" / "mel_segments.npz"
 
 
 def display_model_name(label):
     return str(label).split(" (from ")[0]
 
 
+def load_label_metadata():
+    if MEL_CACHE.exists():
+        data = np.load(MEL_CACHE, allow_pickle=True)
+        track_ids = data["track_ids"] if "track_ids" in data.files else None
+        return data["labels"], track_ids, MEL_CACHE
+    if SEGMENT_CACHE.exists():
+        data = np.load(SEGMENT_CACHE, allow_pickle=True)
+        track_ids = data["track_ids"] if "track_ids" in data.files else None
+        return data["labels"], track_ids, SEGMENT_CACHE
+    raise FileNotFoundError(
+        "Missing label metadata. Provide features/mel_specs.npz or features/mel_segments.npz "
+        "before running hybrid_late_fusion.py."
+    )
+
+
 def load_best_cnn_branch():
     preferred_paths = [
+        RESULTS_ROOT / "2.6 Segment Transformer" / "metrics.csv",
         RESULTS_ROOT / "2.5 Segment Averaging" / "segment_comparison.csv",
         RESULTS_ROOT / "2.4 Augmentation ablation" / "augmentation_comparison.csv",
     ]
@@ -31,8 +48,9 @@ def load_best_cnn_branch():
         RESULTS_ROOT / "2.2 ResNet CNN" / "metrics.csv",
         RESULTS_ROOT / "2.1 Plain CNN" / "metrics.csv",
     ]
-    preferred = next((p for p in preferred_paths if p.exists()), None)
-    paths = [preferred] if preferred is not None else [p for p in fallback_paths if p.exists()]
+    paths = [p for p in preferred_paths if p.exists()]
+    if not paths:
+        paths = [p for p in fallback_paths if p.exists()]
     if not paths:
         raise FileNotFoundError("Run the CNN experiments before hybrid_late_fusion.py.")
 
@@ -150,10 +168,11 @@ def main():
     selected_cnn, cnn_candidates = load_best_cnn_branch()
     cnn_result = load_cnn_branch_probabilities(selected_cnn)
 
-    _mels, labels, track_ids = load_mel_cache()
+    labels, track_ids, metadata_source = load_label_metadata()
     le, _y, _idx_train, _idx_val, idx_test = make_split(labels)
 
     print_section("3 Hybrid Modal")
+    print(f"Metadata source: {metadata_source.relative_to(ROOT)}")
     print(f"Selected CNN-Mel branch: {cnn_result['label']}")
 
     handcrafted_result, handcrafted_candidates = load_best_handcrafted_branch()

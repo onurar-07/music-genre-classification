@@ -15,12 +15,13 @@ term_project/
 ├── extract_features.py              # Part 1 — extract handcrafted features
 ├── handcrafted_feature_baseline.py  # Part 1 — RF/MLP handcrafted baseline
 ├── extract_mel_specs.py             # Part 2 — extract cached mel spectrograms
-├── extract_mel_segments.py          # Part 2.5 — extract cached mel segments locally
+├── extract_mel_segments.py          # Part 2.5/2.6 — extract cached mel segments locally
 ├── plain_cnn.py                     # Part 2.1 — Plain CNN
 ├── resnet_cnn.py                    # Part 2.2 — ResNet CNN
 ├── multi_shape_cnn.py               # Part 2.3 — Multi-shape CNN
 ├── augmentation_ablation.py         # Part 2.4 — augmentation ablation
 ├── segment_averaging.py             # Part 2.5 — segment training + track averaging
+├── segment_transformer.py           # Part 2.6 — segment transformer
 ├── run_GPU.ipynb                    # Colab GPU notebook for model training
 ├── hybrid_late_fusion.py            # Part 3 — Hybrid Modal
 ├── error_analysis.py                # Part 4 — error analysis
@@ -181,6 +182,21 @@ multiple mel segments per track, and averages segment probabilities for
 track-level validation/test prediction.
 Saves unified outputs to `results/2.5 Segment Averaging/`.
 
+### 2.6 — Segment Transformer
+Uses the same local segment cache as Part 2.5:
+```bash
+python3 extract_mel_segments.py
+```
+
+```bash
+python3 segment_transformer.py
+```
+Uses the same selected CNN branch as Part 2.5, including its augmentation
+setting, then replaces track-level probability averaging with a lightweight
+Transformer encoder over segment embeddings. This tests learned segment
+aggregation against the simpler probability averaging in Part 2.5.
+Saves unified outputs to `results/2.6 Segment Transformer/`.
+
 ## Part 3 — Hybrid Modal
 
 ```bash
@@ -240,7 +256,7 @@ Each experiment writes the same core output files inside its own subdirectory:
 | `selected_fusion_weight.csv` | Part 3 only: selected CNN/handcrafted fusion weights |
 | `branch_probabilities.npz` | Validation/test probabilities saved by branch-producing experiments |
 | `branch_probability_index.csv` | Branch labels stored in `branch_probabilities.npz` |
-| `features/mel_segments.npz` | Part 2.5 only: cached fixed-width mel segments for segment training |
+| `features/mel_segments.npz` | Part 2.5/2.6 only: cached fixed-width mel segments for segment training |
 
 The cross-experiment leaderboard is updated automatically after each model
 script runs:
