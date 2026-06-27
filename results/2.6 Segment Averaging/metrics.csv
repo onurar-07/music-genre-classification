@@ -1,3 +1,0 @@
-model,split,accuracy,f1_macro,best_epoch,best_val_f1,param_count,trainable_param_count,training_seconds,epochs_run
-Moderately Regularised CNN - Segment Averaging,val,0.6375,0.6318588951938989,112,0.6318588951938989,295656,295656,2757.8617608440004,160
-Moderately Regularised CNN - Segment Averaging,test,0.635,0.6290799810102221,112,0.6318588951938989,295656,295656,2757.8617608440004,160

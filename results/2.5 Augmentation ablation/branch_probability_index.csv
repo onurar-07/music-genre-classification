@@ -1,4 +1,0 @@
-branch_index,model
-0,Moderately Regularised CNN - SpecAugment
-1,Moderately Regularised CNN - Mixup
-2,Moderately Regularised CNN - SpecAugment + Mixup

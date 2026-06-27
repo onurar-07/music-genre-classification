@@ -1,0 +1,4 @@
+branch_index,model
+0,Multi-shape CNN - SpecAugment
+1,Multi-shape CNN - Mixup
+2,Multi-shape CNN - SpecAugment + Mixup

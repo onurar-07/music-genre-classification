@@ -1,3 +1,0 @@
-model,split,accuracy,f1_macro,best_epoch,best_val_f1,param_count,trainable_param_count,training_seconds,epochs_run
-Multi-shape CNN,val,0.375,0.3522871001833852,92,0.3522871001833852,5768,5768,548.258653112,140
-Multi-shape CNN,test,0.384375,0.36295763758706623,92,0.3522871001833852,5768,5768,548.258653112,140

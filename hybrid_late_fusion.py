@@ -23,13 +23,12 @@ def display_model_name(label):
 
 def load_best_cnn_branch():
     preferred_paths = [
-        RESULTS_ROOT / "2.6 Segment Averaging" / "segment_comparison.csv",
-        RESULTS_ROOT / "2.5 Augmentation ablation" / "augmentation_comparison.csv",
+        RESULTS_ROOT / "2.5 Segment Averaging" / "segment_comparison.csv",
+        RESULTS_ROOT / "2.4 Augmentation ablation" / "augmentation_comparison.csv",
     ]
     fallback_paths = [
-        RESULTS_ROOT / "2.4 Multi-shape CNN" / "metrics.csv",
-        RESULTS_ROOT / "2.3 ResNet CNN" / "metrics.csv",
-        RESULTS_ROOT / "2.2 Regularisation ablation" / "metrics.csv",
+        RESULTS_ROOT / "2.3 Multi-shape CNN" / "metrics.csv",
+        RESULTS_ROOT / "2.2 ResNet CNN" / "metrics.csv",
         RESULTS_ROOT / "2.1 Plain CNN" / "metrics.csv",
     ]
     preferred = next((p for p in preferred_paths if p.exists()), None)

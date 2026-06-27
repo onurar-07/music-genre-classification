@@ -1,0 +1,5 @@
+model,split,accuracy,f1_macro,best_epoch,best_val_f1,param_count,trainable_param_count,training_seconds,epochs_run,probability_source_dir,probability_model
+Multi-shape CNN - Mixup - previous best,val,0.60234375,0.5984039192551855,128,0.5984039192551855,295784,295784,1190.5960686609997,176,2.4 Augmentation ablation,Multi-shape CNN - Mixup
+Multi-shape CNN - Mixup - previous best,test,0.59125,0.5839805589590541,128,0.5984039192551855,295784,295784,1190.5960686609997,176,2.4 Augmentation ablation,Multi-shape CNN - Mixup
+Multi-shape CNN - Mixup - Segment Averaging,val,0.65703125,0.6506685353230935,164,0.6506685353230935,295784,295784,5643.583193749999,212,2.5 Segment Averaging,Multi-shape CNN - Mixup - Segment Averaging
+Multi-shape CNN - Mixup - Segment Averaging,test,0.6475,0.6411946347338658,164,0.6506685353230935,295784,295784,5643.583193749999,212,2.5 Segment Averaging,Multi-shape CNN - Mixup - Segment Averaging

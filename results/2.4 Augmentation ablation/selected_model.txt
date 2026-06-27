@@ -1,0 +1,11 @@
+Architecture/model selection before augmentation ablation
+
+Candidates ranked by validation F1-macro:
+             source                      model  accuracy  f1_macro  best_epoch
+2.3 Multi-shape CNN            Multi-shape CNN  0.596094  0.591381         119
+      2.1 Plain CNN Plain CNN - Regularisation  0.596875  0.588755         184
+      2.1 Plain CNN                  Plain CNN  0.576562  0.570222         161
+     2.2 ResNet CNN                 ResNet CNN  0.541406  0.541544          81
+
+Selected model: Multi-shape CNN
+Selected validation F1-macro: 0.5914

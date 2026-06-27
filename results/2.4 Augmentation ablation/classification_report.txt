@@ -1,0 +1,20 @@
+Multi-shape CNN - Mixup
+Test accuracy: 0.5913
+Test F1-macro: 0.5840
+Best epoch: 128
+Best validation F1-macro: 0.5984
+
+               precision    recall  f1-score   support
+
+   Electronic       0.56      0.59      0.58       200
+ Experimental       0.57      0.45      0.50       200
+         Folk       0.61      0.79      0.69       200
+      Hip-Hop       0.71      0.65      0.68       200
+ Instrumental       0.57      0.61      0.59       200
+International       0.61      0.72      0.66       200
+          Pop       0.41      0.30      0.35       200
+         Rock       0.64      0.63      0.64       200
+
+     accuracy                           0.59      1600
+    macro avg       0.59      0.59      0.58      1600
+ weighted avg       0.59      0.59      0.58      1600

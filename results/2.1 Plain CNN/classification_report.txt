@@ -1,20 +1,20 @@
-Plain CNN
-Test accuracy: 0.5294
-Test F1-macro: 0.5340
-Best epoch: 63
-Best validation F1-macro: 0.5652
+Plain CNN - Regularisation
+Test accuracy: 0.5806
+Test F1-macro: 0.5667
+Best epoch: 184
+Best validation F1-macro: 0.5888
 
                precision    recall  f1-score   support
 
-   Electronic       0.47      0.60      0.53       200
- Experimental       0.43      0.46      0.45       200
-         Folk       0.68      0.54      0.60       200
-      Hip-Hop       0.72      0.61      0.66       200
- Instrumental       0.50      0.58      0.54       200
-International       0.66      0.61      0.63       200
-          Pop       0.30      0.33      0.31       200
-         Rock       0.62      0.50      0.55       200
+   Electronic       0.53      0.56      0.55       200
+ Experimental       0.57      0.41      0.47       200
+         Folk       0.66      0.75      0.70       200
+      Hip-Hop       0.69      0.66      0.67       200
+ Instrumental       0.54      0.71      0.61       200
+International       0.64      0.69      0.66       200
+          Pop       0.32      0.18      0.23       200
+         Rock       0.59      0.69      0.63       200
 
-     accuracy                           0.53      1600
-    macro avg       0.55      0.53      0.53      1600
- weighted avg       0.55      0.53      0.53      1600
+     accuracy                           0.58      1600
+    macro avg       0.57      0.58      0.57      1600
+ weighted avg       0.57      0.58      0.57      1600

@@ -1,4 +1,4 @@
-"""Step 3: Architecture improvement with a ResNet-style CNN."""
+"""Part 2.2: Architecture improvement with a ResNet-style CNN."""
 
 from reporting_utils import experiment_dir, print_section
 from cnn_training_utils import (
@@ -10,7 +10,7 @@ from cnn_training_utils import (
     run_model,
 )
 
-OUT_DIR = experiment_dir("2.3 ResNet CNN")
+OUT_DIR = experiment_dir("2.2 ResNet CNN")
 
 
 def resnet_factory(n_classes):
@@ -20,7 +20,7 @@ def resnet_factory(n_classes):
 def main():
     mels, _labels, track_ids, le, y, idx_train, idx_val, idx_test = prepare_data()
 
-    print_section("2.3 ResNet CNN")
+    print_section("2.2 ResNet CNN")
 
     result = run_model(
         resnet_factory,
@@ -42,7 +42,7 @@ def main():
         augment_cfg=AugmentConfig(specaugment=False, mixup=False),
     )
 
-    finalize_experiment([result], OUT_DIR, le.classes_, "2.3 ResNet CNN", track_ids=track_ids)
+    finalize_experiment([result], OUT_DIR, le.classes_, "2.2 ResNet CNN", track_ids=track_ids)
 
 
 if __name__ == "__main__":

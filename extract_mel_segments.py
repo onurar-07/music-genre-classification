@@ -2,7 +2,7 @@
 Extract cached fixed-width log-mel segments for segment averaging.
 
 Run this locally where the original FMA-small MP3 files are available. The
-resulting features/mel_segments.npz can be copied to Colab for Part 2.6
+resulting features/mel_segments.npz can be copied to Colab for Part 2.5
 training without copying the raw audio.
 """
 

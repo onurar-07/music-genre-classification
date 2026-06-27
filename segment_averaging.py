@@ -1,4 +1,4 @@
-"""Part 2.6: segment-based training with track-level probability averaging."""
+"""Part 2.5: segment-based training with track-level probability averaging."""
 
 import time
 from pathlib import Path
@@ -17,7 +17,7 @@ from cnn_training_utils import (
     AugmentConfig,
     MultiShapeCNN,
     PlainCNN,
-    RegularisedCNN,
+    PlainCNNRegularisation,
     ResNetGenreCNN,
     TrainConfig,
     clone_state_dict,
@@ -44,7 +44,7 @@ from reporting_utils import (
     print_section,
 )
 
-OUT_DIR = experiment_dir("2.6 Segment Averaging")
+OUT_DIR = experiment_dir("2.5 Segment Averaging")
 SEGMENT_CACHE = ROOT / "features" / "mel_segments.npz"
 FMA_AUDIO = ROOT / "data" / "fma_small"
 
@@ -65,20 +65,8 @@ def plain_factory(n_classes):
     return PlainCNN(n_classes=n_classes)
 
 
-def heavy_factory(n_classes):
-    return RegularisedCNN(
-        n_classes=n_classes,
-        block_dropouts=(0.1, 0.2, 0.3),
-        fc_dropouts=(0.6, 0.4),
-    )
-
-
-def moderate_factory(n_classes):
-    return RegularisedCNN(
-        n_classes=n_classes,
-        block_dropouts=(0.05, 0.10, 0.15),
-        fc_dropouts=(0.5, 0.3),
-    )
+def regularised_factory(n_classes):
+    return PlainCNNRegularisation(n_classes=n_classes)
 
 
 def resnet_factory(n_classes):
@@ -92,26 +80,13 @@ def multi_shape_factory(n_classes):
 MODEL_CONFIGS = {
     "Plain CNN": {
         "factory": plain_factory,
-        "train_cfg": TrainConfig(epochs=300, lr=1e-3, weight_decay=1e-4, patience=48),
+        "train_cfg": TrainConfig(epochs=300, lr=1e-3, weight_decay=0.0, patience=48),
         "augment_cfg": AugmentConfig(specaugment=False, mixup=False),
         "spec_t": 25,
         "spec_f": 15,
     },
-    "Heavily Regularised CNN": {
-        "factory": heavy_factory,
-        "train_cfg": TrainConfig(
-            epochs=300,
-            lr=1e-3,
-            weight_decay=1e-3,
-            patience=48,
-            label_smoothing=0.1,
-        ),
-        "augment_cfg": AugmentConfig(specaugment=False, mixup=False),
-        "spec_t": 40,
-        "spec_f": 25,
-    },
-    "Moderately Regularised CNN": {
-        "factory": moderate_factory,
+    "Plain CNN - Regularisation": {
+        "factory": regularised_factory,
         "train_cfg": TrainConfig(
             epochs=300,
             lr=1e-3,
@@ -139,7 +114,13 @@ MODEL_CONFIGS = {
     },
     "Multi-shape CNN": {
         "factory": multi_shape_factory,
-        "train_cfg": TrainConfig(epochs=300, lr=1e-3, weight_decay=1e-4, patience=48),
+        "train_cfg": TrainConfig(
+            epochs=300,
+            lr=1e-3,
+            weight_decay=1e-4,
+            patience=48,
+            label_smoothing=0.1,
+        ),
         "augment_cfg": AugmentConfig(specaugment=False, mixup=False),
         "spec_t": 30,
         "spec_f": 20,
@@ -174,16 +155,15 @@ def parse_selected_label(label):
 
 
 def load_candidate_metrics():
-    preferred = RESULTS_ROOT / "2.5 Augmentation ablation" / "augmentation_comparison.csv"
+    preferred = RESULTS_ROOT / "2.4 Augmentation ablation" / "augmentation_comparison.csv"
     fallback_paths = [
-        RESULTS_ROOT / "2.4 Multi-shape CNN" / "metrics.csv",
-        RESULTS_ROOT / "2.3 ResNet CNN" / "metrics.csv",
-        RESULTS_ROOT / "2.2 Regularisation ablation" / "metrics.csv",
+        RESULTS_ROOT / "2.3 Multi-shape CNN" / "metrics.csv",
+        RESULTS_ROOT / "2.2 ResNet CNN" / "metrics.csv",
         RESULTS_ROOT / "2.1 Plain CNN" / "metrics.csv",
     ]
     paths = [preferred] if preferred.exists() else [p for p in fallback_paths if p.exists()]
     if not paths:
-        raise FileNotFoundError("Run Part 2.1-2.5 before segment_averaging.py.")
+        raise FileNotFoundError("Run Part 2.1-2.4 before segment_averaging.py.")
 
     rows = []
     for path in paths:
@@ -542,7 +522,7 @@ def main():
     le, y, idx_train, idx_val, idx_test = make_split(labels)
     segments, _segment_labels, segment_track_ids = load_segment_cache(track_ids, labels)
 
-    print_section(f"2.6 Segment Averaging - {selected_model}")
+    print_section(f"2.5 Segment Averaging - {selected_model}")
     print(f"Segments: {segments.shape}  split: train={len(idx_train)} val={len(idx_val)} test={len(idx_test)}")
     result = run_segment_model(
         model_cfg,
@@ -559,7 +539,7 @@ def main():
         [result],
         OUT_DIR,
         le.classes_,
-        "2.6 Segment Averaging",
+        "2.5 Segment Averaging",
         track_ids=segment_track_ids,
     )
 
@@ -567,7 +547,7 @@ def main():
     comparison.loc[comparison["probability_source_dir"].isna(), "probability_source_dir"] = OUT_DIR.name
     comparison.loc[comparison["probability_model"].isna(), "probability_model"] = comparison["model"]
     comparison.to_csv(OUT_DIR / "segment_comparison.csv", index=False)
-    plot_metrics(comparison, OUT_DIR, "2.6 Segment Averaging comparison")
+    plot_metrics(comparison, OUT_DIR, "2.5 Segment Averaging comparison")
     print_metrics_summary(comparison, "Segment comparison")
     print_saved_outputs(
         OUT_DIR,

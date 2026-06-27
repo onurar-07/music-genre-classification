@@ -1,11 +1,10 @@
 """Shared train/validation/test split and reporting helpers."""
 
+import os
 from pathlib import Path
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn as sns
 from sklearn.metrics import (
     accuracy_score,
     classification_report,
@@ -19,6 +18,13 @@ TEST_SIZE = 0.20
 VAL_SIZE = 0.20
 
 ROOT = Path(__file__).parent
+MPL_CACHE = ROOT / ".cache" / "matplotlib"
+MPL_CACHE.mkdir(parents=True, exist_ok=True)
+os.environ.setdefault("MPLCONFIGDIR", str(MPL_CACHE))
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+
 RESULTS_ROOT = ROOT / "results"
 RESULTS_ROOT.mkdir(exist_ok=True)
 

@@ -1,0 +1,10 @@
+Model selected for segment-based training
+
+                   source                                 model  accuracy  f1_macro  best_epoch
+2.4 Augmentation ablation               Multi-shape CNN - Mixup  0.602344  0.598404         128
+2.4 Augmentation ablation                       Multi-shape CNN  0.596094  0.591381         119
+2.4 Augmentation ablation         Multi-shape CNN - SpecAugment  0.586719  0.579975         196
+2.4 Augmentation ablation Multi-shape CNN - SpecAugment + Mixup  0.576562  0.566241         161
+
+Selected model: Multi-shape CNN - Mixup
+Selected validation F1-macro: 0.5984

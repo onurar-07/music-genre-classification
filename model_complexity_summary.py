@@ -2,29 +2,20 @@
 
 import pandas as pd
 
-from cnn_training_utils import MultiShapeCNN, PlainCNN, RegularisedCNN, ResNetGenreCNN, count_parameters
+from cnn_training_utils import (
+    MultiShapeCNN,
+    PlainCNN,
+    PlainCNNRegularisation,
+    ResNetGenreCNN,
+    count_parameters,
+)
 from reporting_utils import RESULTS_ROOT, print_saved_outputs, print_section
 
 
 def architecture_rows():
     models = [
         ("Plain CNN", PlainCNN(n_classes=8)),
-        (
-            "Heavily Regularised CNN",
-            RegularisedCNN(
-                n_classes=8,
-                block_dropouts=(0.1, 0.2, 0.3),
-                fc_dropouts=(0.6, 0.4),
-            ),
-        ),
-        (
-            "Moderately Regularised CNN",
-            RegularisedCNN(
-                n_classes=8,
-                block_dropouts=(0.05, 0.10, 0.15),
-                fc_dropouts=(0.5, 0.3),
-            ),
-        ),
+        ("Plain CNN - Regularisation", PlainCNNRegularisation(n_classes=8)),
         ("ResNet CNN", ResNetGenreCNN(n_classes=8)),
         ("Multi-shape CNN", MultiShapeCNN(n_classes=8)),
     ]

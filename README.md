@@ -15,13 +15,12 @@ term_project/
 ├── extract_features.py              # Part 1 — extract handcrafted features
 ├── handcrafted_feature_baseline.py  # Part 1 — RF/MLP handcrafted baseline
 ├── extract_mel_specs.py             # Part 2 — extract cached mel spectrograms
-├── extract_mel_segments.py          # Part 2.6 — extract cached mel segments locally
+├── extract_mel_segments.py          # Part 2.5 — extract cached mel segments locally
 ├── plain_cnn.py                     # Part 2.1 — Plain CNN
-├── regularisation_ablation.py       # Part 2.2 — regularisation ablation
-├── resnet_cnn.py                    # Part 2.3 — ResNet CNN
-├── multi_shape_cnn.py               # Part 2.4 — Multi-shape CNN
-├── augmentation_ablation.py         # Part 2.5 — augmentation ablation
-├── segment_averaging.py             # Part 2.6 — segment training + track averaging
+├── resnet_cnn.py                    # Part 2.2 — ResNet CNN
+├── multi_shape_cnn.py               # Part 2.3 — Multi-shape CNN
+├── augmentation_ablation.py         # Part 2.4 — augmentation ablation
+├── segment_averaging.py             # Part 2.5 — segment training + track averaging
 ├── run_GPU.ipynb                    # Colab GPU notebook for model training
 ├── hybrid_late_fusion.py            # Part 3 — Hybrid Modal
 ├── error_analysis.py                # Part 4 — error analysis
@@ -132,46 +131,42 @@ Extracts mel spectrograms and caches them to `features/mel_specs.npz`.
 ```bash
 python3 plain_cnn.py
 ```
-Trains a plain CNN without augmentation.
+Trains two same-backbone plain CNN branches: `Plain CNN` as the no-regularisation
+CNN baseline, and `Plain CNN - Regularisation` as the regularised counterpart
+with batch normalisation, dropout, weight decay, and label smoothing. The two
+plain CNN branches and ResNet are kept at a similar parameter scale for fairer
+architecture comparison.
 Saves unified outputs to `results/2.1 Plain CNN/`.
 
-### 2.2 — Regularisation ablation
-```bash
-python3 regularisation_ablation.py
-```
-Compares a heavily regularised CNN against a moderately regularised CNN.
-This demonstrates under-learning when regularisation is too aggressive.
-No augmentation is used here, so this stage isolates regularisation effects.
-Saves unified outputs to `results/2.2 Regularisation ablation/`.
-
-### 2.3 — ResNet CNN
+### 2.2 — ResNet CNN
 ```bash
 python3 resnet_cnn.py
 ```
-Trains a stronger ResNet-style CNN without augmentation, so this stage isolates
-architecture effects.
-Saves unified outputs to `results/2.3 ResNet CNN/`.
+Trains a ResNet-style CNN at a similar parameter scale to the plain CNN branches,
+adding residual connections and moderate regularisation without augmentation.
+Saves unified outputs to `results/2.2 ResNet CNN/`.
 
-### 2.4 — Multi-shape CNN
+### 2.3 — Multi-shape CNN
 ```bash
 python3 multi_shape_cnn.py
 ```
 Trains a three-branch CNN with filter shapes matched to local spectrogram
 patterns, broad timbral frequency bands, and longer temporal context. This
-stage tests whether music-aware time-frequency kernels improve the CNN branch
-before augmentation is introduced.
-Saves unified outputs to `results/2.4 Multi-shape CNN/`.
+stage keeps the overall CNN capacity close to the plain CNN branches, so it
+tests whether music-aware time-frequency kernels with moderate regularisation
+improve the CNN branch before augmentation is introduced.
+Saves unified outputs to `results/2.3 Multi-shape CNN/`.
 
-### 2.5 — Augmentation ablation on the selected model
+### 2.4 — Augmentation ablation on the selected model
 ```bash
 python3 augmentation_ablation.py
 ```
-Reads the validation results from Part 2.1 through Part 2.4, selects the best
+Reads the validation results from Part 2.1 through Part 2.3, selects the best
 model architecture by validation F1-macro, reuses that model's no-augmentation result,
 then trains SpecAugment, Mixup, and SpecAugment + Mixup on the selected model.
-Saves unified outputs to `results/2.5 Augmentation ablation/`.
+Saves unified outputs to `results/2.4 Augmentation ablation/`.
 
-### 2.6 — Segment Averaging
+### 2.5 — Segment Averaging
 Requires the local segment cache:
 ```bash
 python3 extract_mel_segments.py
@@ -184,7 +179,7 @@ python3 segment_averaging.py
 Selects the current best CNN branch by validation F1-macro, trains that model on
 multiple mel segments per track, and averages segment probabilities for
 track-level validation/test prediction.
-Saves unified outputs to `results/2.6 Segment Averaging/`.
+Saves unified outputs to `results/2.5 Segment Averaging/`.
 
 ## Part 3 — Hybrid Modal
 
@@ -233,19 +228,19 @@ Each experiment writes the same core output files inside its own subdirectory:
 | `training_history.png` | Training vs validation loss and accuracy curves for neural models |
 | `predictions.csv` | Test-set true/predicted labels, confidence, track id, and mp3 path for error analysis |
 | `high_confidence_errors.csv` | Misclassified test tracks sorted by prediction confidence |
-| `selection_candidates.csv` | Part 2.5 only: Part 2.1/2.2/2.3/2.4 candidates ranked by validation F1 |
-| `selected_model.txt` | Part 2.5 only: selected model used for augmentation ablation |
-| `no_augmentation_baseline.csv` | Part 2.5 only: reused no-augmentation result from Part 2.1/2.2/2.3/2.4 |
-| `augmentation_comparison.csv` | Part 2.5 only: reused baseline plus newly trained augmentations |
-| `previous_best_baseline.csv` | Part 2.6 only: selected pre-segment baseline |
-| `segment_comparison.csv` | Part 2.6 only: previous best vs segment averaging |
+| `selection_candidates.csv` | Part 2.4 only: Part 2.1/2.2/2.3 candidates ranked by validation F1 |
+| `selected_model.txt` | Part 2.4 only: selected model used for augmentation ablation |
+| `no_augmentation_baseline.csv` | Part 2.4 only: reused no-augmentation result from Part 2.1/2.2/2.3 |
+| `augmentation_comparison.csv` | Part 2.4 only: reused baseline plus newly trained augmentations |
+| `previous_best_baseline.csv` | Part 2.5 only: selected pre-segment baseline |
+| `segment_comparison.csv` | Part 2.5 only: previous best vs segment averaging |
 | `cnn_branch_candidates.csv` | Part 3 only: CNN branches considered for fusion |
 | `handcrafted_branch_candidates.csv` | Part 3 only: handcrafted branches considered for fusion |
 | `fusion_weight_search.csv` | Part 3 only: validation F1 across fusion weights |
 | `selected_fusion_weight.csv` | Part 3 only: selected CNN/handcrafted fusion weights |
 | `branch_probabilities.npz` | Validation/test probabilities saved by branch-producing experiments |
 | `branch_probability_index.csv` | Branch labels stored in `branch_probabilities.npz` |
-| `features/mel_segments.npz` | Part 2.6 only: cached fixed-width mel segments for segment training |
+| `features/mel_segments.npz` | Part 2.5 only: cached fixed-width mel segments for segment training |
 
 The cross-experiment leaderboard is updated automatically after each model
 script runs:

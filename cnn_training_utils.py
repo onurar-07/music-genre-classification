@@ -139,19 +139,16 @@ class PlainCNN(nn.Module):
             self._block(1, 32),
             self._block(32, 64),
             self._block(64, 128),
-            self._block(128, 256),
         )
         self.pool = nn.AdaptiveAvgPool2d(1)
-        self.classifier = nn.Sequential(nn.Dropout(0.5), nn.Linear(256, n_classes))
+        self.classifier = nn.Linear(128, n_classes)
 
     @staticmethod
     def _block(in_ch, out_ch):
         return nn.Sequential(
-            nn.Conv2d(in_ch, out_ch, 3, padding=1, bias=False),
-            nn.BatchNorm2d(out_ch),
+            nn.Conv2d(in_ch, out_ch, 3, padding=1),
             nn.ReLU(inplace=True),
-            nn.Conv2d(out_ch, out_ch, 3, padding=1, bias=False),
-            nn.BatchNorm2d(out_ch),
+            nn.Conv2d(out_ch, out_ch, 3, padding=1),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(2, 2),
         )
@@ -162,12 +159,12 @@ class PlainCNN(nn.Module):
         return self.classifier(x)
 
 
-class RegularisedCNN(nn.Module):
+class PlainCNNRegularisation(nn.Module):
     def __init__(
         self,
         n_classes=8,
-        block_dropouts=(0.1, 0.2, 0.3),
-        fc_dropouts=(0.6, 0.4),
+        block_dropouts=(0.05, 0.10, 0.15),
+        classifier_dropout=0.5,
     ):
         super().__init__()
         self.block1 = self._conv_block(1, 32)
@@ -178,11 +175,8 @@ class RegularisedCNN(nn.Module):
         self.drop3 = nn.Dropout2d(block_dropouts[2])
         self.pool = nn.AdaptiveAvgPool2d(1)
         self.classifier = nn.Sequential(
-            nn.Dropout(fc_dropouts[0]),
-            nn.Linear(128, 64),
-            nn.ReLU(inplace=True),
-            nn.Dropout(fc_dropouts[1]),
-            nn.Linear(64, n_classes),
+            nn.Dropout(classifier_dropout),
+            nn.Linear(128, n_classes),
         )
 
     @staticmethod
@@ -234,12 +228,12 @@ class ResNetGenreCNN(nn.Module):
     def __init__(
         self,
         n_classes=8,
-        channels=(16, 32, 64, 96),
+        channels=(16, 32, 64, 112),
         stage_blocks=(1, 1, 1, 1),
-        stage_dropouts=(0.05, 0.08, 0.12, 0.16),
+        stage_dropouts=(0.04, 0.06, 0.10, 0.14),
         stem_dropout=0.05,
-        pre_pool_dropout=0.15,
-        classifier_dropout=0.50,
+        pre_pool_dropout=0.20,
+        classifier_dropout=0.45,
     ):
         super().__init__()
         c1, c2, c3, c4 = channels
@@ -254,8 +248,15 @@ class ResNetGenreCNN(nn.Module):
         self.stage3 = self._make_stage(c2, c3, blocks=stage_blocks[2], stride=2, dropout=stage_dropouts[2])
         self.stage4 = self._make_stage(c3, c4, blocks=stage_blocks[3], stride=2, dropout=stage_dropouts[3])
         self.pre_pool_dropout = nn.Dropout2d(pre_pool_dropout)
-        self.pool = nn.AdaptiveAvgPool2d(1)
-        self.classifier = nn.Sequential(nn.Dropout(classifier_dropout), nn.Linear(c4, n_classes))
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.max_pool = nn.AdaptiveMaxPool2d(1)
+        self.classifier = nn.Sequential(
+            nn.Dropout(classifier_dropout),
+            nn.Linear(c4 * 2, c4),
+            nn.ReLU(inplace=True),
+            nn.Dropout(classifier_dropout * 0.5),
+            nn.Linear(c4, n_classes),
+        )
 
     @staticmethod
     def _make_stage(in_ch, out_ch, blocks, stride, dropout):
@@ -272,48 +273,77 @@ class ResNetGenreCNN(nn.Module):
         x = self.stage3(x)
         x = self.stage4(x)
         x = self.pre_pool_dropout(x)
-        x = self.pool(x).flatten(1)
+        x = torch.cat([self.avg_pool(x), self.max_pool(x)], dim=1).flatten(1)
         return self.classifier(x)
 
 
 class MultiShapeCNN(nn.Module):
-    def __init__(self, n_classes=8):
+    def __init__(
+        self,
+        n_classes=8,
+        branch_width=8,
+        block_dropouts=(0.05, 0.10, 0.15),
+        classifier_dropout=0.45,
+    ):
         super().__init__()
+        bw = branch_width
 
         self.local_branch = nn.Sequential(
-            nn.Conv2d(1, 32, kernel_size=(3, 3), padding=(1, 1), bias=False),
-            nn.BatchNorm2d(32),
-            nn.ReLU(),
-            nn.MaxPool2d(2),
+            nn.Conv2d(1, bw, kernel_size=(3, 3), padding=(1, 1), bias=False),
+            nn.BatchNorm2d(bw),
+            nn.ReLU(inplace=True),
         )
 
         self.timbre_branch = nn.Sequential(
-            nn.Conv2d(1, 32, kernel_size=(32, 3), padding=(16, 1), bias=False),
-            nn.BatchNorm2d(32),
-            nn.ReLU(),
-            nn.MaxPool2d(2),
+            nn.Conv2d(1, bw, kernel_size=(32, 3), padding=(16, 1), bias=False),
+            nn.BatchNorm2d(bw),
+            nn.ReLU(inplace=True),
         )
 
         self.temporal_branch = nn.Sequential(
-            nn.Conv2d(1, 32, kernel_size=(3, 15), padding=(1, 7), bias=False),
-            nn.BatchNorm2d(32),
-            nn.ReLU(),
-            nn.MaxPool2d(2),
+            nn.Conv2d(1, bw, kernel_size=(3, 15), padding=(1, 7), bias=False),
+            nn.BatchNorm2d(bw),
+            nn.ReLU(inplace=True),
         )
 
+        self.block1 = self._block(bw * 3, 32)
+        self.drop1 = nn.Dropout2d(block_dropouts[0])
+        self.block2 = self._block(32, 64)
+        self.drop2 = nn.Dropout2d(block_dropouts[1])
+        self.block3 = self._block(64, 128)
+        self.drop3 = nn.Dropout2d(block_dropouts[2])
         self.pool = nn.AdaptiveAvgPool2d(1)
-
         self.classifier = nn.Sequential(
-            nn.Dropout(0.5),
-            nn.Linear(32 * 3, n_classes),
+            nn.Dropout(classifier_dropout),
+            nn.Linear(128, n_classes),
+        )
+
+    @staticmethod
+    def _block(in_ch, out_ch):
+        return nn.Sequential(
+            nn.Conv2d(in_ch, out_ch, 3, padding=1, bias=False),
+            nn.BatchNorm2d(out_ch),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(out_ch, out_ch, 3, padding=1, bias=False),
+            nn.BatchNorm2d(out_ch),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(2, 2),
         )
 
     def forward(self, x):
-        x1 = self.pool(self.local_branch(x)).flatten(1)
-        x2 = self.pool(self.timbre_branch(x)).flatten(1)
-        x3 = self.pool(self.temporal_branch(x)).flatten(1)
-
-        x = torch.cat([x1, x2, x3], dim=1)
+        height, width = x.shape[-2:]
+        x = torch.cat(
+            [
+                self.local_branch(x)[..., :height, :width],
+                self.timbre_branch(x)[..., :height, :width],
+                self.temporal_branch(x)[..., :height, :width],
+            ],
+            dim=1,
+        )
+        x = self.drop1(self.block1(x))
+        x = self.drop2(self.block2(x))
+        x = self.drop3(self.block3(x))
+        x = self.pool(x).flatten(1)
         return self.classifier(x)
 
 
