@@ -136,7 +136,7 @@ class FMADataset(Dataset):
 def train_epoch(model, loader, optimizer, criterion, use_amp, scaler):
     model.train()
     total_loss, correct, n = 0.0, 0, 0
-    for features, labels in loader:
+    for batch_idx, (features, labels) in enumerate(loader):
         features = features.to(DEVICE, non_blocking=True)   # (B, time, freq)
         labels   = labels.to(DEVICE, non_blocking=True)
         optimizer.zero_grad(set_to_none=True)
@@ -153,6 +153,8 @@ def train_epoch(model, loader, optimizer, criterion, use_amp, scaler):
         correct    += (logits.argmax(1) == labels).sum().item()
         total_loss += loss.item() * len(labels)
         n          += len(labels)
+        if (batch_idx + 1) % 50 == 0:
+            print(f"    step {batch_idx+1}/{len(loader)}  loss={loss.item():.4f}  acc={correct/n:.4f}", flush=True)
     return total_loss / n, correct / n
 
 
@@ -212,18 +214,21 @@ def main():
     print(f"Loading feature extractor from {MODEL_NAME}")
     fe = ASTFeatureExtractor.from_pretrained(MODEL_NAME)
 
+    # AST is 86M params — MPS/CPU can't sustain the same batch size as CUDA
+    train_bs = 16 if DEVICE.type == "cuda" else 4
+    eval_bs  =  8 if DEVICE.type == "cuda" else 2
     loader_kw = dict(num_workers=0, pin_memory=DEVICE.type == "cuda")
     train_loader = DataLoader(
         FMADataset(track_ids[idx_train], y[idx_train], fe, train=True),
-        batch_size=16, shuffle=True, **loader_kw,
+        batch_size=train_bs, shuffle=True, **loader_kw,
     )
     val_loader = DataLoader(
         FMADataset(track_ids[idx_val], y[idx_val], fe, train=False),
-        batch_size=8, shuffle=False, **loader_kw,
+        batch_size=eval_bs, shuffle=False, **loader_kw,
     )
     test_loader = DataLoader(
         FMADataset(track_ids[idx_test], y[idx_test], fe, train=False),
-        batch_size=8, shuffle=False, **loader_kw,
+        batch_size=eval_bs, shuffle=False, **loader_kw,
     )
 
     print(f"Building model (num_labels={len(le.classes_)})")
