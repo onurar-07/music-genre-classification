@@ -12,6 +12,8 @@ Compares handcrafted features (MFCC, chroma, rhythm) with CNN-based approaches o
 
 ```
 term_project/
+├── run_GPU.ipynb                    # Colab GPU notebook for model training
+├── run_TL_GPU.ipynb                 # Colab GPU notebook for transfer learning
 ├── extract_features.py              # Part 1 — extract handcrafted features
 ├── handcrafted_feature_baseline.py  # Part 1 — RF/MLP handcrafted baseline
 ├── extract_mel_specs.py             # Part 2 — extract cached mel spectrograms
@@ -22,15 +24,13 @@ term_project/
 ├── augmentation_ablation.py         # Part 2.4 — augmentation ablation
 ├── segment_averaging.py             # Part 2.5 — segment training + track averaging
 ├── segment_transformer.py           # Part 2.6 — segment transformer
+├── hybrid_late_fusion.py            # Part 3 — Hybrid Modal
+├── error_analysis.py                # Part 4 — error analysis
 ├── transfer_learning_imagenet_resnet18.py # Part 5.1 — ImageNet ResNet18
-├── run_GPU.ipynb                    # Colab GPU notebook for model training
-├── run_TL_GPU.ipynb                 # Colab GPU notebook for transfer learning
 ├── transfer_learning_panns_cnn14.py # Part 5.2 — PANNs-CNN14 audio transfer learning
 ├── transfer_learning_ast.py         # Part 5.3 — AST audio transfer learning
 ├── transfer_learning_fine_tuning.py # Part 5.4 — fine-tune best audio transfer model
 ├── transfer_learning_error_analysis.py # Part 5.5 — transfer-learning error analysis
-├── hybrid_late_fusion.py            # Part 3 — Hybrid Modal
-├── error_analysis.py                # Part 4 — error analysis
 ├── model_complexity_summary.py      # Summarise parameter counts and training runtimes
 ├── cnn_training_utils.py # Shared CNN models, augmentations, training loop
 ├── reporting_utils.py  # Shared split, metrics, plots, and reports
