@@ -1,0 +1,20 @@
+AST embeddings - MLP - Segment Averaging
+Test accuracy: 0.6881
+Test F1-macro: 0.6866
+Best epoch: 63
+Best validation F1-macro: 0.6925
+
+               precision    recall  f1-score   support
+
+   Electronic       0.69      0.75      0.72       200
+ Experimental       0.63      0.57      0.60       200
+         Folk       0.73      0.77      0.75       200
+      Hip-Hop       0.80      0.78      0.79       200
+ Instrumental       0.64      0.68      0.66       200
+International       0.82      0.82      0.82       200
+          Pop       0.50      0.46      0.48       200
+         Rock       0.68      0.67      0.68       200
+
+     accuracy                           0.69      1600
+    macro avg       0.69      0.69      0.69      1600
+ weighted avg       0.69      0.69      0.69      1600

@@ -1,0 +1,9 @@
+true_label,support,correct,errors,recall
+Pop,200,92,108,0.46
+Experimental,200,115,85,0.575
+Rock,200,134,66,0.67
+Instrumental,200,136,64,0.68
+Electronic,200,150,50,0.75
+Folk,200,154,46,0.77
+Hip-Hop,200,155,45,0.775
+International,200,165,35,0.825

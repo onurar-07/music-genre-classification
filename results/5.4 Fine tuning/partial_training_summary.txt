@@ -1,0 +1,36 @@
+5.4 Fine Tuning partial run summary
+
+Source: run_TL_GPU.ipynb output log
+
+Selection:
+- Selected frozen model: AST embeddings - MLP - Segment Averaging
+- Selection validation F1-macro: 0.6925
+- Fine-tuning model: Fine-tuned AST - Segment Averaging
+- Parameters: 86,194,952 total; 46,088 trainable
+
+Completed epochs:
+epoch,train_loss,train_acc,val_acc,val_f1,lr
+1,1.3493,0.5921,0.6492,0.6469,2.00e-05
+2,1.1697,0.6617,0.6617,0.6581,2.00e-05
+3,1.1274,0.6768,0.6703,0.6688,2.00e-05
+4,1.0978,0.6897,0.6727,0.6608,2.00e-05
+5,1.0772,0.6951,0.6813,0.6811,2.00e-05
+6,1.0604,0.7098,0.6820,0.6795,2.00e-05
+7,1.0463,0.7074,0.6789,0.6759,2.00e-05
+8,1.0316,0.7188,0.6813,0.6794,2.00e-05
+
+Best partial validation F1:
+- Epoch 5: val_f1=0.6811, val_acc=0.6813
+
+Interrupted progress:
+- Epoch 9 training appears to have completed, but the log stops during validation
+  at eval 89% (568/640). Because epoch 9 validation did not finish, it is not
+  included as a completed epoch.
+
+Conclusion:
+The fine-tuning run did not finish within the available Colab runtime. It has no
+test-set evaluation and should not be reported as a completed model-comparison
+result. The best partial validation F1 (0.6811) is still below the complete
+Part 5.3 AST embeddings - MLP - Segment Averaging validation F1 (0.6925), so
+the best complete Part 5 result remains AST embeddings - MLP - Segment Averaging
+from Part 5.3.

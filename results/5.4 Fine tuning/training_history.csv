@@ -1,0 +1,9 @@
+model,epoch,train_loss,train_acc,val_acc,val_f1,lr
+Fine-tuned AST - Segment Averaging (partial),1,1.3493,0.5921,0.6492,0.6469,2.00e-05
+Fine-tuned AST - Segment Averaging (partial),2,1.1697,0.6617,0.6617,0.6581,2.00e-05
+Fine-tuned AST - Segment Averaging (partial),3,1.1274,0.6768,0.6703,0.6688,2.00e-05
+Fine-tuned AST - Segment Averaging (partial),4,1.0978,0.6897,0.6727,0.6608,2.00e-05
+Fine-tuned AST - Segment Averaging (partial),5,1.0772,0.6951,0.6813,0.6811,2.00e-05
+Fine-tuned AST - Segment Averaging (partial),6,1.0604,0.7098,0.6820,0.6795,2.00e-05
+Fine-tuned AST - Segment Averaging (partial),7,1.0463,0.7074,0.6789,0.6759,2.00e-05
+Fine-tuned AST - Segment Averaging (partial),8,1.0316,0.7188,0.6813,0.6794,2.00e-05
