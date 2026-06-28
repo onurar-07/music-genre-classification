@@ -74,6 +74,47 @@ def plot_confusion(df, out_dir=OUT_DIR, title="Error analysis confusion matrix")
     plt.close()
 
 
+def make_data_cleaning_candidates(errors):
+    candidates = errors.copy()
+    sort_cols = ["confidence"]
+    if "confidence_margin" in candidates.columns:
+        sort_cols.append("confidence_margin")
+    candidates = candidates.sort_values(sort_cols, ascending=False).reset_index(drop=True)
+    candidates.insert(0, "review_rank", candidates.index + 1)
+
+    if "confidence_margin" in candidates.columns:
+        high_priority = (candidates["confidence"] >= 0.90) & (
+            candidates["confidence_margin"] >= 0.70
+        )
+        medium_priority = (candidates["confidence"] >= 0.75) & (
+            candidates["confidence_margin"] >= 0.40
+        )
+    else:
+        high_priority = candidates["confidence"] >= 0.90
+        medium_priority = candidates["confidence"] >= 0.75
+
+    candidates["review_priority"] = "Low"
+    candidates.loc[medium_priority, "review_priority"] = "Medium"
+    candidates.loc[high_priority, "review_priority"] = "High"
+    candidates["suggested_action"] = "manual_label_review"
+
+    front_cols = [
+        "review_rank",
+        "review_priority",
+        "suggested_action",
+        "track_id",
+        "true_label",
+        "pred_label",
+        "confidence",
+        "true_confidence",
+        "confidence_margin",
+        "mp3_path",
+    ]
+    front_cols = [col for col in front_cols if col in candidates.columns]
+    remaining_cols = [col for col in candidates.columns if col not in front_cols]
+    return candidates[front_cols + remaining_cols]
+
+
 def analyze_predictions(
     pred_path,
     out_dir=OUT_DIR,
@@ -116,6 +157,8 @@ def analyze_predictions(
     confusion_pairs.to_csv(out_dir / "top_confusions.csv", index=False)
     if high_conf_errors is not None:
         high_conf_errors.to_csv(out_dir / "high_confidence_errors.csv", index=False)
+        cleaning_candidates = make_data_cleaning_candidates(high_conf_errors)
+        cleaning_candidates.to_csv(out_dir / "data_cleaning_candidates.csv", index=False)
     plot_per_class(per_class, out_dir=out_dir)
     plot_confusion(df, out_dir=out_dir)
 
@@ -162,6 +205,7 @@ def analyze_predictions(
             "per_class_errors.csv",
             "top_confusions.csv",
             "high_confidence_errors.csv",
+            "data_cleaning_candidates.csv",
             "per_class_recall.png",
             "confusion_matrix.png",
             "error_analysis_summary.txt",
