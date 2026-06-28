@@ -19,9 +19,13 @@ SEGMENT_CACHE = ROOT / "features" / "mel_segments.npz"
 
 
 def display_model_name(label):
-    name = str(label).split(" (from ")[0]
+    return str(label).split(" (from ")[0]
+
+
+def hybrid_component_name(label):
+    name = display_model_name(label)
     if name.endswith(" - Combined"):
-        name = name[: -len(" - Combined")]
+        return "Combined"
     return name
 
 
@@ -194,7 +198,10 @@ def main():
     test_pred = test_proba.argmax(1)
 
     hybrid_result = {
-        "label": f"Hybrid late fusion ({cnn_result['label']} + {handcrafted_result['label']})",
+        "label": (
+            f"Hybrid late fusion ({cnn_result['label']} + "
+            f"{hybrid_component_name(handcrafted_result['label'])})"
+        ),
         "val_true": cnn_result["val_true"],
         "val_pred": (
             best_weight["cnn_weight"] * cnn_result["val_proba"]

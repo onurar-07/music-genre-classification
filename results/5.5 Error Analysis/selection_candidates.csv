@@ -1,4 +1,4 @@
 experiment,model,val_accuracy,val_f1_macro,best_epoch,metrics_path,predictions_path
-5.3 AST,AST embeddings - MLP - Segment Averaging,0.69453125,0.692458336277219,63,results/5.3 AST/metrics.csv,results/5.3 AST/predictions.csv
-5.2 PANNs-CNN14,PANNs-CNN14 embeddings - MLP - Segment Averaging,0.65234375,0.6488494199900137,20,results/5.2 PANNs-CNN14/metrics.csv,results/5.2 PANNs-CNN14/predictions.csv
+5.3 AST,AST embeddings - Mixup Ensemble - Segment Logit Averaging,0.71640625,0.7148680813094341,18/12/13,results/5.3 AST/metrics.csv,results/5.3 AST/predictions.csv
+5.2 PANNs-CNN14,PANNs-CNN14 embeddings - MLP - Segment Averaging,0.66328125,0.6617377386579792,1,results/5.2 PANNs-CNN14/metrics.csv,results/5.2 PANNs-CNN14/predictions.csv
 5.1 ImageNet ResNet18,ImageNet ResNet18 - layer4 fine-tune - Segment Averaging,0.63671875,0.6349308099660727,14,results/5.1 ImageNet ResNet18/metrics.csv,results/5.1 ImageNet ResNet18/predictions.csv

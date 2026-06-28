@@ -1,6 +1,6 @@
 model,split,accuracy,f1_macro,best_epoch,best_val_f1,param_count,trainable_param_count,training_seconds,epochs_run,source
 RF - Timbre,val,0.51640625,0.5067604936135099,,,513364,,10.429385050000064,,1 Random Forest vs MLP
 RF - Harmony,val,0.38984375,0.3780506885210177,,,612640,,7.505771946999971,,1 Random Forest vs MLP
-RF - Rhythm,val,0.3546875,0.3445538061654797,,,565090,,18.538669709000036,,1 Random Forest vs MLP
+RF - Rhythm,val,0.3546875,0.3445538061654797,,,565090,,18.538669709000033,,1 Random Forest vs MLP
 RF - Combined,val,0.53046875,0.5224094365046641,,,480758,,22.55052151899997,,1 Random Forest vs MLP
 MLP - Combined,val,0.53984375,0.5277756353840048,,,365960,365960.0,5.597723873999939,14.0,1 Random Forest vs MLP

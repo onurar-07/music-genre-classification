@@ -1,11 +1,12 @@
 """Error analysis for the selected model."""
 
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 from sklearn.metrics import confusion_matrix
 
 from reporting_utils import RESULTS_ROOT, experiment_dir, print_saved_outputs
+
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 OUT_DIR = experiment_dir("4 Error analysis")
 DEFAULT_SUGGESTIONS = [

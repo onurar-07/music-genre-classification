@@ -2,35 +2,47 @@
 
 Source: run_TL_GPU.ipynb output log
 
-Selection:
-- Selected frozen model: AST embeddings - MLP - Segment Averaging
-- Selection validation F1-macro: 0.6925
-- Fine-tuning model: Fine-tuned AST - Segment Averaging
-- Parameters: 86,194,952 total; 46,088 trainable
+Configuration:
+- Model: Fine-tuned AST - Segment Averaging
+- Pretrained backbone: MIT/ast-finetuned-audioset-10-10-0.4593
+- Cached inputs: features/ast_inputs.npz
+- Trainable modules: final AST encoder block, final layernorm, classifier
+- Parameters: 86,194,952 total; 7,097,096 trainable
 
 Completed epochs:
 epoch,train_loss,train_acc,val_acc,val_f1,lr
-1,1.3493,0.5921,0.6492,0.6469,2.00e-05
-2,1.1697,0.6617,0.6617,0.6581,2.00e-05
-3,1.1274,0.6768,0.6703,0.6688,2.00e-05
-4,1.0978,0.6897,0.6727,0.6608,2.00e-05
-5,1.0772,0.6951,0.6813,0.6811,2.00e-05
-6,1.0604,0.7098,0.6820,0.6795,2.00e-05
-7,1.0463,0.7074,0.6789,0.6759,2.00e-05
-8,1.0316,0.7188,0.6813,0.6794,2.00e-05
+1,1.4794,0.5136,0.6383,0.6309,2.00e-05
+2,1.1724,0.6361,0.6656,0.6627,2.00e-05
+3,1.1050,0.6617,0.6680,0.6648,2.00e-05
+4,1.0525,0.6805,0.6773,0.6687,2.00e-05
+5,1.0097,0.6990,0.6914,0.6906,2.00e-05
+6,0.9638,0.7157,0.6891,0.6904,2.00e-05
+7,0.9239,0.7352,0.6828,0.6796,2.00e-05
+8,0.8780,0.7532,0.6820,0.6802,2.00e-05
+9,0.8305,0.7790,0.6961,0.6948,2.00e-05
+10,0.7902,0.7979,0.6883,0.6867,2.00e-05
+11,0.7412,0.8270,0.6953,0.6919,2.00e-05
+12,0.6901,0.8528,0.6961,0.6949,2.00e-05
+13,0.6457,0.8730,0.6789,0.6769,2.00e-05
+14,0.5962,0.9007,0.6922,0.6904,2.00e-05
+15,0.5524,0.9201,0.6781,0.6771,2.00e-05
+16,0.5131,0.9380,0.6813,0.6802,1.00e-05
+17,0.4667,0.9551,0.6797,0.6793,1.00e-05
+18,0.4499,0.9650,0.6789,0.6774,1.00e-05
+19,0.4346,0.9717,0.6781,0.6789,1.00e-05
 
 Best partial validation F1:
-- Epoch 5: val_f1=0.6811, val_acc=0.6813
+- Epoch 12: val_f1=0.6949, val_acc=0.6961
+
+Latest completed epoch:
+- Epoch 19: train_loss=0.4346, train_acc=0.9717, val_f1=0.6789
 
 Interrupted progress:
-- Epoch 9 training appears to have completed, but the log stops during validation
-  at eval 89% (568/640). Because epoch 9 validation did not finish, it is not
-  included as a completed epoch.
+- The log stops during the next training epoch at: train:  75% 80/107 [01:20<00:27,  1.01s/it]
 
 Conclusion:
-The fine-tuning run did not finish within the available Colab runtime. It has no
-test-set evaluation and should not be reported as a completed model-comparison
-result. The best partial validation F1 (0.6811) is still below the complete
-Part 5.3 AST embeddings - MLP - Segment Averaging validation F1 (0.6925), so
-the best complete Part 5 result remains AST embeddings - MLP - Segment Averaging
-from Part 5.3.
+The fine-tuning run is still partial because it has no completed test-set evaluation,
+classification report, predictions, or confusion matrix. It should not be treated as
+a completed model-comparison result yet. The best partial validation F1 is 0.6949,
+slightly above the Part 5.3 AST embeddings - MLP - Segment Averaging validation F1
+(0.6925), but final reporting still requires a completed test evaluation.

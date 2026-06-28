@@ -125,7 +125,7 @@ def clean_model_label(label):
     label = str(label)
     old_suffix = " + MLP - Combined)"
     if label.startswith("Hybrid late fusion (") and label.endswith(old_suffix):
-        return label[: -len(old_suffix)] + " + MLP)"
+        return label[: -len(old_suffix)] + " + Combined)"
     return label
 
 
@@ -134,6 +134,19 @@ def result_record(model, split, y_true, y_pred, **extra):
     row.update(compute_scores(y_true, y_pred))
     row.update(extra)
     return row
+
+
+def experiment_part(experiment):
+    experiment = str(experiment)
+    if experiment.startswith("1 "):
+        return "Handcrafted Baseline"
+    if experiment.startswith("2."):
+        return "CNN Optimisation"
+    if experiment.startswith("3 "):
+        return "Hybrid Modal"
+    if experiment.startswith("5."):
+        return "Transfer Learning"
+    return "Other"
 
 
 def save_metrics(results, out_dir: Path) -> pd.DataFrame:
@@ -404,14 +417,30 @@ def update_global_comparison():
     all_df.to_csv(RESULTS_ROOT / "model_comparison.csv", index=False)
 
     plot_df = all_df.sort_values("f1_macro")
+    part_colors = {
+        "Handcrafted Baseline": "#4C78A8",
+        "CNN Optimisation": "#59A14F",
+        "Hybrid Modal": "#F28E2B",
+        "Transfer Learning": "#E15759",
+        "Other": "#9D9D9D",
+    }
+    plot_df["part"] = plot_df["experiment"].map(experiment_part)
+    bar_colors = plot_df["part"].map(part_colors)
     y = np.arange(len(plot_df))
     fig, ax = plt.subplots(figsize=(11, max(5, 0.45 * len(plot_df) + 1.5)))
-    ax.barh(y, plot_df["f1_macro"], color="#4C78A8", edgecolor="white")
+    ax.barh(y, plot_df["f1_macro"], color=bar_colors, edgecolor="white")
     ax.set_yticks(y)
     ax.set_yticklabels(plot_df["model"])
     ax.set_xlim(0, 1.0)
     ax.set_xlabel("Test F1-macro")
     ax.set_title("Unified test-set model comparison", fontweight="bold")
+    handles = [
+        plt.Rectangle((0, 0), 1, 1, color=color)
+        for part, color in part_colors.items()
+        if part in set(plot_df["part"])
+    ]
+    labels = [part for part in part_colors if part in set(plot_df["part"])]
+    ax.legend(handles, labels, loc="lower right", frameon=True)
     for row, (_, item) in enumerate(plot_df.iterrows()):
         ax.text(item["f1_macro"] + 0.01, row, f"{item['f1_macro']:.3f}", va="center", fontsize=8)
     plt.tight_layout()

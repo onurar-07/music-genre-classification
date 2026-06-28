@@ -1,43 +1,43 @@
 5.5 Transfer-learning error analysis
 Source predictions: results/5.3 AST/predictions.csv
-Overall accuracy: 0.6881
+Overall accuracy: 0.7069
 Selected experiment: 5.3 AST
-Selected model: AST embeddings - MLP - Segment Averaging
-Selected validation F1-macro: 0.6925
+Selected model: AST embeddings - Mixup Ensemble - Segment Logit Averaging
+Selected validation F1-macro: 0.7149
 
 Weakest classes by recall:
   true_label  support  correct  errors  recall
-         Pop      200       92     108   0.460
-Experimental      200      115      85   0.575
-        Rock      200      134      66   0.670
-Instrumental      200      136      64   0.680
-  Electronic      200      150      50   0.750
+         Pop      200       96     104   0.480
+Experimental      200      123      77   0.615
+Instrumental      200      138      62   0.690
+        Rock      200      142      58   0.710
+     Hip-Hop      200      153      47   0.765
 
 Most common confusion pairs:
   true_label   pred_label  count
-        Rock          Pop     27
-Instrumental Experimental     23
-Experimental          Pop     23
-         Pop         Rock     21
-         Pop         Folk     20
-         Pop Instrumental     17
-         Pop Experimental     16
-Experimental Instrumental     15
-        Folk Instrumental     15
+         Pop         Rock     28
+        Rock          Pop     26
+Instrumental Experimental     19
+Experimental          Pop     19
+Experimental Instrumental     18
+     Hip-Hop   Electronic     18
+         Pop         Folk     17
+         Pop   Electronic     16
+Experimental   Electronic     16
 Instrumental   Electronic     15
 
 Highest-confidence errors:
- track_id    true_label    pred_label  confidence  confidence_margin                      mp3_path
-    99135    Electronic International    1.000000           1.000000 data/fma_small/099/099135.mp3
-   130956          Folk           Pop    1.000000           0.999999 data/fma_small/130/130956.mp3
-    56036    Electronic       Hip-Hop    0.999995           0.999990 data/fma_small/056/056036.mp3
-   113305          Rock    Electronic    0.999995           0.999990 data/fma_small/113/113305.mp3
-   105685       Hip-Hop International    0.999995           0.999993 data/fma_small/105/105685.mp3
-    74377  Experimental          Folk    0.999994           0.999989 data/fma_small/074/074377.mp3
-   113809           Pop International    0.999994           0.999991 data/fma_small/113/113809.mp3
-   113268 International    Electronic    0.999994           0.999989 data/fma_small/113/113268.mp3
-    64858  Experimental    Electronic    0.999990           0.999980 data/fma_small/064/064858.mp3
-    63789       Hip-Hop    Electronic    0.999978           0.999957 data/fma_small/063/063789.mp3
+ track_id   true_label    pred_label  confidence  confidence_margin                      mp3_path
+    42851         Rock  Experimental    0.992335           0.988832 data/fma_small/042/042851.mp3
+    99135   Electronic International    0.977950           0.971624 data/fma_small/099/099135.mp3
+   105685      Hip-Hop International    0.977634           0.967893 data/fma_small/105/105685.mp3
+   130693         Rock  Experimental    0.968059           0.951482 data/fma_small/130/130693.mp3
+    47662         Folk  Instrumental    0.964485           0.954125 data/fma_small/047/047662.mp3
+    74377 Experimental          Folk    0.955141           0.944721 data/fma_small/074/074377.mp3
+    95189 Experimental    Electronic    0.951390           0.932185 data/fma_small/095/095189.mp3
+    45934 Experimental  Instrumental    0.949281           0.906749 data/fma_small/045/045934.mp3
+    58063 Experimental    Electronic    0.948636           0.916473 data/fma_small/058/058063.mp3
+   109958          Pop  Experimental    0.947929           0.935361 data/fma_small/109/109958.mp3
 
 Suggested next improvements:
 - Inspect Pop and Experimental first; they are consistently difficult genre labels.

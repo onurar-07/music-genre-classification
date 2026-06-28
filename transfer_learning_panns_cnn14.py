@@ -9,6 +9,7 @@ MLP classifiers on full-track and segment-averaged embeddings.
 import time
 import urllib.request
 import warnings
+import zipfile
 from pathlib import Path
 
 import librosa
@@ -20,14 +21,6 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from tqdm import tqdm
-
-try:
-    from torchlibrosa.stft import LogmelFilterBank, Spectrogram
-except ImportError as exc:
-    raise ImportError(
-        "transfer_learning_panns_cnn14.py requires torchlibrosa. "
-        "Install project dependencies with: pip3 install -r requirements.txt"
-    ) from exc
 
 from cnn_training_utils import (
     DEVICE,
@@ -110,6 +103,14 @@ class ConvBlock(nn.Module):
 class Cnn14(nn.Module):
     def __init__(self, classes_num=527):
         super().__init__()
+        try:
+            from torchlibrosa.stft import LogmelFilterBank, Spectrogram
+        except ImportError as exc:
+            raise ImportError(
+                "Building PANNs-CNN14 embeddings requires torchlibrosa. "
+                "Install project dependencies with: pip3 install -r requirements.txt"
+            ) from exc
+
         self.spectrogram_extractor = Spectrogram(
             n_fft=WINDOW_SIZE,
             hop_length=HOP_SIZE,
@@ -304,24 +305,32 @@ def load_or_build_embeddings(track_ids, labels):
     return build_embedding_cache(track_ids, labels)
 
 
-def make_mlp():
-    return Pipeline(
-        [
-            ("scaler", StandardScaler()),
-            (
-                "clf",
-                MLPClassifier(
-                    hidden_layer_sizes=(512, 128),
-                    activation="relu",
-                    alpha=1e-4,
-                    learning_rate_init=1e-3,
-                    max_iter=500,
-                    early_stopping=True,
-                    validation_fraction=0.1,
-                    random_state=42,
-                ),
-            ),
-        ]
+def load_labels_and_track_ids():
+    if EMBEDDING_CACHE.exists():
+        data = np.load(EMBEDDING_CACHE, allow_pickle=True)
+        if {"labels", "track_ids"}.issubset(data.files):
+            print_section("Load labels from cached PANNs-CNN14 embeddings")
+            print(f"Cache: {EMBEDDING_CACHE.relative_to(ROOT)}")
+            return data["labels"], data["track_ids"]
+
+    try:
+        _mels, labels, track_ids = load_mel_cache()
+        return labels, track_ids
+    except zipfile.BadZipFile as exc:
+        raise zipfile.BadZipFile(
+            "features/mel_specs.npz is corrupted, and labels/track_ids could not "
+            "be recovered from features/panns_cnn14_embeddings.npz."
+        ) from exc
+
+
+def make_mlp_classifier():
+    return MLPClassifier(
+        hidden_layer_sizes=(256,),
+        activation="relu",
+        alpha=3e-3,
+        learning_rate_init=1e-3,
+        max_iter=1,
+        random_state=42,
     )
 
 
@@ -330,11 +339,66 @@ def mlp_param_count(model):
     return sum(w.size for w in clf.coefs_) + sum(b.size for b in clf.intercepts_)
 
 
+def fit_mlp_with_history(
+    X_train,
+    y_train,
+    score_train,
+    score_val,
+    max_epochs=500,
+    patience=5,
+    tol=1e-4,
+):
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X_train)
+    clf = make_mlp_classifier()
+    classes = np.unique(y_train)
+    history = {"train_loss": [], "train_acc": [], "val_acc": []}
+    best_state, best_val, best_epoch, no_improve = None, -1.0, 0, 0
+
+    for epoch in range(1, max_epochs + 1):
+        if epoch == 1:
+            clf.partial_fit(X_scaled, y_train, classes=classes)
+        else:
+            clf.partial_fit(X_scaled, y_train)
+
+        model = Pipeline([("scaler", scaler), ("clf", clf)])
+        train_acc = score_train(model)
+        val_acc = score_val(model)
+        history["train_loss"].append(float(clf.loss_))
+        history["train_acc"].append(float(train_acc))
+        history["val_acc"].append(float(val_acc))
+
+        if val_acc > best_val + tol:
+            best_state = (
+                [coef.copy() for coef in clf.coefs_],
+                [intercept.copy() for intercept in clf.intercepts_],
+            )
+            best_val = float(val_acc)
+            best_epoch = epoch
+            no_improve = 0
+        else:
+            no_improve += 1
+            if no_improve >= patience:
+                break
+
+    if best_state is not None:
+        clf.coefs_, clf.intercepts_ = best_state
+    clf.n_iter_ = len(history["train_loss"])
+    clf.loss_curve_ = history["train_loss"]
+    clf.validation_scores_ = history["val_acc"]
+    model = Pipeline([("scaler", scaler), ("clf", clf)])
+    return model, history, best_epoch
+
+
 def train_full_embedding_model(X, y, idx_train, idx_val, idx_test):
     label = "PANNs-CNN14 embeddings - MLP"
     start_time = time.perf_counter()
-    model = make_mlp()
-    model.fit(X[idx_train], y[idx_train])
+    model, history, best_epoch = fit_mlp_with_history(
+        X[idx_train],
+        y[idx_train],
+        score_train=lambda model: model.score(X[idx_train], y[idx_train]),
+        score_val=lambda model: model.score(X[idx_val], y[idx_val]),
+    )
     training_seconds = time.perf_counter() - start_time
     param_count = mlp_param_count(model)
     val_proba = model.predict_proba(X[idx_val])
@@ -348,12 +412,13 @@ def train_full_embedding_model(X, y, idx_train, idx_val, idx_test):
         "test_pred": test_proba.argmax(1),
         "test_proba": test_proba,
         "test_indices": idx_test,
-        "best_epoch": getattr(model.named_steps["clf"], "n_iter_", ""),
+        "best_epoch": best_epoch,
         "best_val_f1": "",
         "param_count": param_count,
         "trainable_param_count": param_count,
         "training_seconds": training_seconds,
         "epochs_run": getattr(model.named_steps["clf"], "n_iter_", ""),
+        "history": history,
     }
 
 
@@ -362,19 +427,24 @@ def train_segment_embedding_model(segment_X, y, idx_train, idx_val, idx_test):
     n_segments = segment_X.shape[1]
     X_train = segment_X[idx_train].reshape(-1, segment_X.shape[-1])
     y_train = np.repeat(y[idx_train], n_segments)
-    start_time = time.perf_counter()
-    model = make_mlp()
-    model.fit(X_train, y_train)
-    training_seconds = time.perf_counter() - start_time
-    param_count = mlp_param_count(model)
 
-    def averaged_proba(indices):
+    def averaged_proba(model, indices):
         flat = segment_X[indices].reshape(-1, segment_X.shape[-1])
         proba = model.predict_proba(flat).reshape(len(indices), n_segments, -1)
         return proba.mean(axis=1)
 
-    val_proba = averaged_proba(idx_val)
-    test_proba = averaged_proba(idx_test)
+    start_time = time.perf_counter()
+    model, history, best_epoch = fit_mlp_with_history(
+        X_train,
+        y_train,
+        score_train=lambda model: (averaged_proba(model, idx_train).argmax(1) == y[idx_train]).mean(),
+        score_val=lambda model: (averaged_proba(model, idx_val).argmax(1) == y[idx_val]).mean(),
+    )
+    training_seconds = time.perf_counter() - start_time
+    param_count = mlp_param_count(model)
+
+    val_proba = averaged_proba(model, idx_val)
+    test_proba = averaged_proba(model, idx_test)
     return {
         "label": label,
         "val_true": y[idx_val],
@@ -384,12 +454,13 @@ def train_segment_embedding_model(segment_X, y, idx_train, idx_val, idx_test):
         "test_pred": test_proba.argmax(1),
         "test_proba": test_proba,
         "test_indices": idx_test,
-        "best_epoch": getattr(model.named_steps["clf"], "n_iter_", ""),
+        "best_epoch": best_epoch,
         "best_val_f1": "",
         "param_count": param_count,
         "trainable_param_count": param_count,
         "training_seconds": training_seconds,
         "epochs_run": getattr(model.named_steps["clf"], "n_iter_", ""),
+        "history": history,
     }
 
 
@@ -405,7 +476,7 @@ def fill_best_val_f1(results):
 
 def main():
     seed_everything()
-    _mels, labels, track_ids = load_mel_cache()
+    labels, track_ids = load_labels_and_track_ids()
     le = LabelEncoder()
     y = le.fit_transform(labels)
     idx_train, idx_val, idx_test = make_split(labels)[2:]

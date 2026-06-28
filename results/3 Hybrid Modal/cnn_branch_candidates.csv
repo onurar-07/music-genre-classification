@@ -1,3 +1,8 @@
-model,split,accuracy,f1_macro,best_epoch,best_val_f1,param_count,trainable_param_count,training_seconds,epochs_run,probability_source_dir,probability_model,source
-Multi-shape CNN - Mixup - previous best,val,0.60234375,0.5984039192551855,128,0.5984039192551855,295784,295784,1190.5960686609997,176,2.4 Augmentation ablation,Multi-shape CNN - Mixup,2.5 Segment Averaging
-Multi-shape CNN - Mixup - Segment Averaging,val,0.65703125,0.6506685353230935,164,0.6506685353230935,295784,295784,5643.583193749999,212,2.5 Segment Averaging,Multi-shape CNN - Mixup - Segment Averaging,2.5 Segment Averaging
+model,split,accuracy,f1_macro,best_epoch,best_val_f1,param_count,trainable_param_count,training_seconds,epochs_run,source,probability_source_dir,probability_model
+Multi-shape CNN - Mixup - Segment Transformer,val,0.63671875,0.6385890139384753,73,0.6385890139384753,693096,693096,3165.064857815,121,2.6 Segment Transformer,2.6 Segment Transformer,Multi-shape CNN - Mixup - Segment Transformer
+Multi-shape CNN - Mixup - previous best,val,0.60234375,0.5984039192551855,128,0.5984039192551855,295784,295784,1190.5960686609997,176,2.5 Segment Averaging,2.4 Augmentation ablation,Multi-shape CNN - Mixup
+Multi-shape CNN - Mixup - Segment Averaging,val,0.65703125,0.6506685353230935,164,0.6506685353230935,295784,295784,5643.583193749999,212,2.5 Segment Averaging,2.5 Segment Averaging,Multi-shape CNN - Mixup - Segment Averaging
+Multi-shape CNN,val,0.59609375,0.5913808752026749,119,0.5913808752026749,295784,295784,1183.8417726860002,167,2.4 Augmentation ablation,2.3 Multi-shape CNN,Multi-shape CNN
+Multi-shape CNN - SpecAugment,val,0.58671875,0.5799750039360871,196,0.5799750039360871,295784,295784,1713.9645321279995,244,2.4 Augmentation ablation,2.4 Augmentation ablation,Multi-shape CNN - SpecAugment
+Multi-shape CNN - Mixup,val,0.60234375,0.5984039192551855,128,0.5984039192551855,295784,295784,1190.5960686609997,176,2.4 Augmentation ablation,2.4 Augmentation ablation,Multi-shape CNN - Mixup
+Multi-shape CNN - SpecAugment + Mixup,val,0.5765625,0.5662411553427835,161,0.5662411553427835,295784,295784,1425.976535963001,209,2.4 Augmentation ablation,2.4 Augmentation ablation,Multi-shape CNN - SpecAugment + Mixup
