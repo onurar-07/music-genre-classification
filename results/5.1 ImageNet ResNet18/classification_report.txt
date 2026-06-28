@@ -1,0 +1,20 @@
+ImageNet ResNet18 - layer4 fine-tune - Segment Averaging
+Test accuracy: 0.6450
+Test F1-macro: 0.6444
+Best epoch: 14
+Best validation F1-macro: 0.6349
+
+               precision    recall  f1-score   support
+
+   Electronic       0.62      0.68      0.65       200
+ Experimental       0.56      0.52      0.54       200
+         Folk       0.70      0.74      0.72       200
+      Hip-Hop       0.78      0.74      0.76       200
+ Instrumental       0.62      0.65      0.64       200
+International       0.71      0.78      0.74       200
+          Pop       0.44      0.45      0.44       200
+         Rock       0.74      0.60      0.66       200
+
+     accuracy                           0.65      1600
+    macro avg       0.65      0.65      0.64      1600
+ weighted avg       0.65      0.65      0.64      1600

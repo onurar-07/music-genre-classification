@@ -121,8 +121,16 @@ def compute_scores(y_true, y_pred):
     }
 
 
+def clean_model_label(label):
+    label = str(label)
+    old_suffix = " + MLP - Combined)"
+    if label.startswith("Hybrid late fusion (") and label.endswith(old_suffix):
+        return label[: -len(old_suffix)] + " + MLP)"
+    return label
+
+
 def result_record(model, split, y_true, y_pred, **extra):
-    row = {"model": model, "split": split}
+    row = {"model": clean_model_label(model), "split": split}
     row.update(compute_scores(y_true, y_pred))
     row.update(extra)
     return row
@@ -373,6 +381,7 @@ def update_global_comparison():
         return None
 
     all_df = pd.concat(rows, ignore_index=True)
+    all_df["model"] = all_df["model"].map(clean_model_label)
     optional_cols = ["param_count", "trainable_param_count", "training_seconds", "epochs_run"]
     for col in optional_cols:
         if col not in all_df.columns:

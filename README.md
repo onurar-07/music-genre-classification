@@ -22,7 +22,13 @@ term_project/
 ├── augmentation_ablation.py         # Part 2.4 — augmentation ablation
 ├── segment_averaging.py             # Part 2.5 — segment training + track averaging
 ├── segment_transformer.py           # Part 2.6 — segment transformer
+├── transfer_learning_imagenet_resnet18.py # Part 5.1 — ImageNet ResNet18
 ├── run_GPU.ipynb                    # Colab GPU notebook for model training
+├── run_TL_GPU.ipynb                 # Colab GPU notebook for transfer learning
+├── transfer_learning_panns_cnn14.py # Part 5.2 — PANNs-CNN14 audio transfer learning
+├── transfer_learning_ast.py         # Part 5.3 — AST audio transfer learning
+├── transfer_learning_fine_tuning.py # Part 5.4 — fine-tune best audio transfer model
+├── transfer_learning_error_analysis.py # Part 5.5 — transfer-learning error analysis
 ├── hybrid_late_fusion.py            # Part 3 — Hybrid Modal
 ├── error_analysis.py                # Part 4 — error analysis
 ├── model_complexity_summary.py      # Summarise parameter counts and training runtimes
@@ -91,7 +97,8 @@ Recommended workflow:
    ```
 
 2. **Colab GPU:** copy the project with the generated `features/*.npz` files,
-   then run `run_GPU.ipynb` to train and evaluate the models.
+   then run `run_GPU.ipynb` to train and evaluate the main pipeline. To run only
+   the transfer-learning experiment, use `run_TL_GPU.ipynb`.
 
 Do not rerun feature extraction on Colab unless the raw FMA audio is also
 available there.
@@ -219,6 +226,59 @@ python3 error_analysis.py
 Analyses the selected model's `predictions.csv`, reports weakest classes and
 most common confusion pairs, and writes next-improvement notes to
 `results/4 Error analysis/`.
+
+## Part 5 — Transfer Learning
+
+### 5.1 — ImageNet ResNet18
+```bash
+python3 transfer_learning_imagenet_resnet18.py
+```
+Uses an ImageNet-pretrained ResNet18 as a spectrogram-image backbone. The script
+trains a frozen-backbone classifier, a partially fine-tuned `layer4` model, and
+a segment-averaged partially fine-tuned model. It reuses `features/mel_specs.npz`
+and `features/mel_segments.npz`, then saves unified outputs to
+`results/5.1 ImageNet ResNet18/`.
+
+### 5.2 — PANNs-CNN14
+```bash
+python3 transfer_learning_panns_cnn14.py
+```
+Uses the AudioSet-pretrained PANNs-CNN14 model as a frozen audio embedding
+extractor, then trains MLP classifiers on full-track embeddings and averaged
+segment embeddings. Unlike Part 5.1, this experiment needs the original
+`data/fma_small/` MP3 files because the PANNs checkpoint expects its own
+waveform-to-log-mel front end. Embeddings are cached to
+`features/panns_cnn14_embeddings.npz`, and unified outputs are saved to
+`results/5.2 PANNs-CNN14/`.
+
+### 5.3 — AST
+```bash
+python3 transfer_learning_ast.py
+```
+Uses the AudioSet-pretrained Audio Spectrogram Transformer as a frozen audio
+embedding extractor, then trains MLP classifiers on center-crop embeddings and
+averaged segment embeddings. Like Part 5.2, this experiment needs
+`data/fma_small/` MP3 files. Embeddings are cached to
+`features/ast_embeddings.npz`, and unified outputs are saved to
+`results/5.3 AST/`.
+
+### 5.4 — Fine Tuning
+```bash
+python3 transfer_learning_fine_tuning.py
+```
+Compares validation F1-macro from `results/5.2 PANNs-CNN14/metrics.csv` and
+`results/5.3 AST/metrics.csv`, selects the better audio-pretrained family, then
+fine-tunes only that model. The script uses lightweight fine-tuning by unfreezing
+the classification head plus the final AST encoder layer or final PANNs-CNN14
+block. Outputs are saved to `results/5.4 Fine Tuning/`.
+
+### 5.5 — Transfer-learning error analysis
+```bash
+python3 transfer_learning_error_analysis.py
+```
+Selects the best available Part 5 model by validation F1-macro, reads its
+`predictions.csv`, and writes per-class recall, common confusion pairs,
+high-confidence errors, and plots to `results/5.5 Error Analysis/`.
 
 ### Optional — Model complexity summary
 ```bash

@@ -8,6 +8,12 @@ from sklearn.metrics import confusion_matrix
 from reporting_utils import RESULTS_ROOT, experiment_dir, print_saved_outputs
 
 OUT_DIR = experiment_dir("4 Error analysis")
+DEFAULT_SUGGESTIONS = [
+    "- Segment-based training to expose more local temporal detail.",
+    "- Multi-crop inference to average predictions over several song excerpts.",
+    "- Inspect Pop and Experimental confusions first; they are usually the weakest labels.",
+    "- Inspect whether the hybrid branch improves or worsens the weakest CNN classes.",
+]
 PREFERRED_PREDICTIONS = [
     RESULTS_ROOT / "3 Hybrid Modal" / "predictions.csv",
     RESULTS_ROOT / "2.6 Segment Transformer" / "predictions.csv",
@@ -31,20 +37,20 @@ def find_predictions():
     )
 
 
-def plot_per_class(per_class):
+def plot_per_class(per_class, out_dir=OUT_DIR, title="Per-class recall"):
     fig, ax = plt.subplots(figsize=(9, 5))
     bars = ax.barh(per_class["true_label"], per_class["recall"], color="#4C78A8", edgecolor="white")
     ax.set_xlim(0, 1.0)
     ax.set_xlabel("Recall")
-    ax.set_title("Per-class recall")
+    ax.set_title(title)
     for bar, val in zip(bars, per_class["recall"]):
         ax.text(val + 0.01, bar.get_y() + bar.get_height() / 2, f"{val:.2f}", va="center", fontsize=8)
     plt.tight_layout()
-    plt.savefig(OUT_DIR / "per_class_recall.png", dpi=150)
+    plt.savefig(out_dir / "per_class_recall.png", dpi=150)
     plt.close()
 
 
-def plot_confusion(df):
+def plot_confusion(df, out_dir=OUT_DIR, title="Error analysis confusion matrix"):
     labels = sorted(df["true_label"].unique())
     cm = confusion_matrix(df["true_label"], df["pred_label"], labels=labels)
     cm_norm = cm.astype(float) / cm.sum(axis=1, keepdims=True)
@@ -61,14 +67,21 @@ def plot_confusion(df):
     )
     ax.set_xlabel("Predicted label")
     ax.set_ylabel("True label")
-    ax.set_title("Error analysis confusion matrix")
+    ax.set_title(title)
     plt.tight_layout()
-    plt.savefig(OUT_DIR / "confusion_matrix.png", dpi=150)
+    plt.savefig(out_dir / "confusion_matrix.png", dpi=150)
     plt.close()
 
 
-def main():
-    pred_path = find_predictions()
+def analyze_predictions(
+    pred_path,
+    out_dir=OUT_DIR,
+    title="Error analysis",
+    suggestions=None,
+    extra_lines=None,
+):
+    suggestions = suggestions or DEFAULT_SUGGESTIONS
+    extra_lines = extra_lines or []
     df = pd.read_csv(pred_path)
 
     per_class = (
@@ -98,17 +111,18 @@ def main():
         high_conf_errors = errors.sort_values(sort_cols, ascending=False)
 
     overall_acc = df["correct"].mean()
-    per_class.to_csv(OUT_DIR / "per_class_errors.csv", index=False)
-    confusion_pairs.to_csv(OUT_DIR / "top_confusions.csv", index=False)
+    per_class.to_csv(out_dir / "per_class_errors.csv", index=False)
+    confusion_pairs.to_csv(out_dir / "top_confusions.csv", index=False)
     if high_conf_errors is not None:
-        high_conf_errors.to_csv(OUT_DIR / "high_confidence_errors.csv", index=False)
-    plot_per_class(per_class)
-    plot_confusion(df)
+        high_conf_errors.to_csv(out_dir / "high_confidence_errors.csv", index=False)
+    plot_per_class(per_class, out_dir=out_dir)
+    plot_confusion(df, out_dir=out_dir)
 
     lines = [
-        "Error analysis",
+        title,
         f"Source predictions: {pred_path.relative_to(RESULTS_ROOT.parent)}",
         f"Overall accuracy: {overall_acc:.4f}",
+        *extra_lines,
         "",
         "Weakest classes by recall:",
         per_class.head(5).to_string(index=False),
@@ -136,16 +150,13 @@ def main():
     lines.extend([
         "",
         "Suggested next improvements:",
-        "- Segment-based training to expose more local temporal detail.",
-        "- Multi-crop inference to average predictions over several song excerpts.",
-        "- Inspect Pop and Experimental confusions first; they are usually the weakest labels.",
-        "- Inspect whether the hybrid branch improves or worsens the weakest CNN classes.",
+        *suggestions,
     ])
-    (OUT_DIR / "error_analysis_summary.txt").write_text("\n".join(lines), encoding="utf-8")
+    (out_dir / "error_analysis_summary.txt").write_text("\n".join(lines), encoding="utf-8")
 
     print("\n".join(lines))
     print_saved_outputs(
-        OUT_DIR,
+        out_dir,
         [
             "per_class_errors.csv",
             "top_confusions.csv",
@@ -155,6 +166,17 @@ def main():
             "error_analysis_summary.txt",
         ],
     )
+    return {
+        "overall_acc": overall_acc,
+        "per_class": per_class,
+        "confusion_pairs": confusion_pairs,
+        "high_conf_errors": high_conf_errors,
+    }
+
+
+def main():
+    pred_path = find_predictions()
+    analyze_predictions(pred_path)
 
 
 if __name__ == "__main__":

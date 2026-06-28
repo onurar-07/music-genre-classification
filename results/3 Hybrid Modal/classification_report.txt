@@ -1,4 +1,4 @@
-Hybrid late fusion (Multi-shape CNN - Mixup - Segment Averaging + MLP - Combined)
+Hybrid late fusion (Multi-shape CNN - Mixup - Segment Averaging + MLP)
 Test accuracy: 0.6475
 Test F1-macro: 0.6412
 Best validation F1-macro: 0.6507

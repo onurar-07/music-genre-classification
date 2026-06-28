@@ -19,7 +19,10 @@ SEGMENT_CACHE = ROOT / "features" / "mel_segments.npz"
 
 
 def display_model_name(label):
-    return str(label).split(" (from ")[0]
+    name = str(label).split(" (from ")[0]
+    if name.endswith(" - Combined"):
+        name = name[: -len(" - Combined")]
+    return name
 
 
 def load_label_metadata():
@@ -128,7 +131,7 @@ def load_best_handcrafted_branch():
             )
         branch_idx = branch_labels.index(selected_label)
         result = {
-            "label": selected_label,
+            "label": display_model_name(selected_label),
             "val_proba": data["val_proba"][branch_idx],
             "test_proba": data["test_proba"][branch_idx],
             "val_true": data["val_true"],

@@ -1,0 +1,20 @@
+PANNs-CNN14 embeddings - MLP - Segment Averaging
+Test accuracy: 0.6400
+Test F1-macro: 0.6385
+Best epoch: 20
+Best validation F1-macro: 0.6488
+
+               precision    recall  f1-score   support
+
+   Electronic       0.64      0.68      0.66       200
+ Experimental       0.53      0.42      0.47       200
+         Folk       0.70      0.69      0.70       200
+      Hip-Hop       0.78      0.76      0.77       200
+ Instrumental       0.65      0.64      0.65       200
+International       0.77      0.78      0.78       200
+          Pop       0.41      0.43      0.42       200
+         Rock       0.63      0.72      0.67       200
+
+     accuracy                           0.64      1600
+    macro avg       0.64      0.64      0.64      1600
+ weighted avg       0.64      0.64      0.64      1600

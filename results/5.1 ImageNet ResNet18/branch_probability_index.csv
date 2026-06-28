@@ -1,0 +1,4 @@
+branch_index,model
+0,ImageNet ResNet18 - frozen classifier
+1,ImageNet ResNet18 - layer4 fine-tune
+2,ImageNet ResNet18 - layer4 fine-tune - Segment Averaging
