@@ -1,0 +1,21 @@
+5.5 Remaining Errors After Data Cleaning
+
+Total remaining cleaned-label errors: 264
+Strict 8-class remaining errors: 261
+Out-of-taxonomy remaining cases: 3
+High-confidence strict remaining errors: 13
+
+Top remaining confusions after cleaning:
+cleaned_true_label   pred_label  count
+              Rock          Pop     24
+      Experimental   Electronic     20
+      Experimental          Pop     19
+      Experimental Instrumental     16
+        Electronic          Pop     12
+     International          Pop     10
+      Experimental         Rock     10
+               Pop         Folk      9
+      Instrumental Experimental      9
+      Experimental         Folk      8
+
+Full table: cleaned_remaining_errors.csv
