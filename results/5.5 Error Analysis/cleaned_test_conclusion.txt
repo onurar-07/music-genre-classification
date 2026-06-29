@@ -1,0 +1,11 @@
+5.5 Main Conclusion
+
+Best model:
+AST embeddings - Mixup Ensemble - Segment Logit Averaging
+
+Original test labels: 0.7062 macro-F1.
+Strict cleaned 8-class test labels: 0.8336 macro-F1.
+
+The +0.1274 macro-F1 gain after manual label review shows that label noise and out-of-taxonomy ambiguity are major contributors to the remaining apparent test error.
+
+Use the original test result as the primary benchmark, and use the cleaned-label result as evidence for label-quality limitations in the dataset.

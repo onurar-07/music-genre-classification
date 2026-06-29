@@ -115,6 +115,26 @@ def make_data_cleaning_candidates(errors):
     return candidates[front_cols + remaining_cols]
 
 
+def preserve_existing_review_columns(candidates, output_path):
+    if not output_path.exists():
+        return candidates
+
+    existing = pd.read_csv(output_path)
+    key_cols = [col for col in ["sample_index", "track_id"] if col in candidates.columns]
+    if not key_cols or not set(key_cols).issubset(existing.columns):
+        return candidates
+
+    preserved_cols = [
+        col for col in existing.columns
+        if col not in candidates.columns or col == "Subjective Label"
+    ]
+    if not preserved_cols:
+        return candidates
+
+    preserved = existing[key_cols + preserved_cols].drop_duplicates(key_cols)
+    return candidates.merge(preserved, on=key_cols, how="left")
+
+
 def analyze_predictions(
     pred_path,
     out_dir=OUT_DIR,
@@ -158,7 +178,12 @@ def analyze_predictions(
     if high_conf_errors is not None:
         high_conf_errors.to_csv(out_dir / "high_confidence_errors.csv", index=False)
         cleaning_candidates = make_data_cleaning_candidates(high_conf_errors)
-        cleaning_candidates.to_csv(out_dir / "data_cleaning_candidates.csv", index=False)
+        cleaning_path = out_dir / "data_cleaning_candidates.csv"
+        cleaning_candidates = preserve_existing_review_columns(
+            cleaning_candidates,
+            cleaning_path,
+        )
+        cleaning_candidates.to_csv(cleaning_path, index=False)
     plot_per_class(per_class, out_dir=out_dir)
     plot_confusion(df, out_dir=out_dir)
 
@@ -168,28 +193,21 @@ def analyze_predictions(
         f"Overall accuracy: {overall_acc:.4f}",
         *extra_lines,
         "",
-        "Weakest classes by recall:",
-        per_class.head(5).to_string(index=False),
-        "",
-        "Most common confusion pairs:",
-        confusion_pairs.head(10).to_string(index=False),
+        "Main error patterns:",
+        "- Weakest classes: "
+        + ", ".join(per_class.head(3)["true_label"].astype(str).tolist())
+        + ".",
+        "- Most common confusions: "
+        + ", ".join(
+            f"{row.true_label} -> {row.pred_label}"
+            for row in confusion_pairs.head(3).itertuples(index=False)
+        )
+        + ".",
     ]
     if high_conf_errors is not None:
-        display_cols = [
-            col for col in [
-                "track_id",
-                "true_label",
-                "pred_label",
-                "confidence",
-                "confidence_margin",
-                "mp3_path",
-            ]
-            if col in high_conf_errors.columns
-        ]
         lines.extend([
             "",
-            "Highest-confidence errors:",
-            high_conf_errors[display_cols].head(10).to_string(index=False),
+            f"High-confidence error candidates exported: {len(high_conf_errors)}",
         ])
     lines.extend([
         "",

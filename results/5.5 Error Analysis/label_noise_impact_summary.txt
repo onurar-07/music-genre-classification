@@ -1,0 +1,15 @@
+5.5 Label Noise Impact Summary
+
+Manual review:
+- Reviewed high-confidence error candidates: 469
+- In-domain relabelled samples: 466
+- Changed in-domain labels: 250
+- Out-of-taxonomy samples excluded from strict metric: 3
+
+Performance impact:
+- Original macro-F1: 0.7062
+- Strict cleaned-label macro-F1: 0.8336
+- Macro-F1 delta: +0.1274
+
+Interpretation:
+The large gap between original-label and cleaned-label performance indicates that label noise and out-of-taxonomy ambiguity account for a substantial part of the apparent test error.

@@ -416,7 +416,7 @@ def update_global_comparison():
     ]
     all_df.to_csv(RESULTS_ROOT / "model_comparison.csv", index=False)
 
-    plot_df = all_df.sort_values("f1_macro")
+    plot_df = all_df.sort_values("f1_macro").reset_index(drop=True)
     part_colors = {
         "Handcrafted Baseline": "#4C78A8",
         "CNN Optimisation": "#59A14F",
@@ -440,6 +440,49 @@ def update_global_comparison():
         if part in set(plot_df["part"])
     ]
     labels = [part for part in part_colors if part in set(plot_df["part"])]
+    cleaned_metrics_path = RESULTS_ROOT / "5.5 Error Analysis" / "cleaned_test_metrics.csv"
+    if cleaned_metrics_path.exists():
+        cleaned_metrics = pd.read_csv(cleaned_metrics_path)
+        cleaned_rows = cleaned_metrics[
+            cleaned_metrics["evaluation"] == "cleaned_test_labels_in_domain_only"
+        ]
+        if not cleaned_rows.empty:
+            cleaned_f1 = float(cleaned_rows.iloc[0]["f1_macro"])
+            target_model = "AST embeddings - Mixup Ensemble - Segment Logit Averaging"
+            target_rows = plot_df.index[plot_df["model"] == target_model].tolist()
+            if target_rows:
+                target_y = target_rows[0]
+                ax.barh(
+                    target_y,
+                    cleaned_f1,
+                    height=0.72,
+                    facecolor="none",
+                    edgecolor=part_colors["Transfer Learning"],
+                    linewidth=2.0,
+                    linestyle="--",
+                    zorder=4,
+                )
+                ax.text(
+                    min(cleaned_f1 + 0.01, 0.965),
+                    target_y,
+                    f"cleaned {cleaned_f1:.3f}",
+                    va="center",
+                    ha="left",
+                    fontsize=8,
+                    color=part_colors["Transfer Learning"],
+                )
+            handles.append(
+                plt.Rectangle(
+                    (0, 0),
+                    1,
+                    1,
+                    facecolor="none",
+                    edgecolor=part_colors["Transfer Learning"],
+                    linestyle="--",
+                    linewidth=2.0,
+                )
+            )
+            labels.append("Cleaned labels")
     ax.legend(handles, labels, loc="lower right", frameon=True)
     for row, (_, item) in enumerate(plot_df.iterrows()):
         ax.text(item["f1_macro"] + 0.01, row, f"{item['f1_macro']:.3f}", va="center", fontsize=8)

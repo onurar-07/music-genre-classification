@@ -1,0 +1,19 @@
+5.5 Cleaned-Label Evaluation
+
+Source predictions:
+results/5.3 AST/predictions.csv
+
+Manual review file:
+results/5.5 Error Analysis/data_cleaning_candidates.csv
+
+Results:
+- Original test labels: accuracy 0.7069, macro-F1 0.7062, n=1600
+- Strict cleaned 8-class labels: accuracy 0.8366, macro-F1 0.8336, n=1597
+- Cleaned labels with unresolved kept original: accuracy 0.8350, macro-F1 0.8320, n=1600
+
+Cleaning rule:
+- In-domain subjective labels replace original test labels.
+- Experimental/Speech is treated as Experimental.
+- Pure Speech labels are excluded from the strict 8-class cleaned-label metric.
+
+Detailed per-class results are in cleaned_vs_original_per_class.csv and cleaned_vs_original_per_class.png.

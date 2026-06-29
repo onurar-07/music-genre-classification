@@ -1,0 +1,2 @@
+original_n,cleaned_strict_n,reviewed_error_candidates,in_domain_relabelled,changed_in_domain_labels,out_of_taxonomy_labels,unresolved_labels,original_accuracy,cleaned_accuracy,accuracy_delta,original_macro_f1,cleaned_macro_f1,macro_f1_delta
+1600,1597,469,466,250,3,0,0.706875,0.8365685660613651,0.12969356606136506,0.7061606508251593,0.8335895401475046,0.1274288893223453
