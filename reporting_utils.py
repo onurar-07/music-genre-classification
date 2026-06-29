@@ -433,7 +433,7 @@ def update_global_comparison():
     ax.set_yticklabels(plot_df["model"])
     ax.set_xlim(0, 1.0)
     ax.set_xlabel("Test F1-macro")
-    ax.set_title("Unified test-set model comparison", fontweight="bold")
+    ax.set_title("Overall Test-set Model Comparison", fontweight="bold")
     handles = [
         plt.Rectangle((0, 0), 1, 1, color=color)
         for part, color in part_colors.items()
