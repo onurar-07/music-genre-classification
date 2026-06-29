@@ -465,7 +465,7 @@ def update_global_comparison():
                 ax.text(
                     min(cleaned_f1 + 0.01, 0.965),
                     target_y,
-                    f"cleaned {cleaned_f1:.3f}",
+                    f"{cleaned_f1:.2f}",
                     va="center",
                     ha="left",
                     fontsize=8,
