@@ -482,7 +482,7 @@ def update_global_comparison():
                     linewidth=2.0,
                 )
             )
-            labels.append("Cleaned labels")
+            labels.append("Data Cleaning")
     ax.legend(handles, labels, loc="lower right", frameon=True)
     for row, (_, item) in enumerate(plot_df.iterrows()):
         ax.text(item["f1_macro"] + 0.01, row, f"{item['f1_macro']:.3f}", va="center", fontsize=8)
